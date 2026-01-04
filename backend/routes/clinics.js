@@ -36,9 +36,17 @@ router.post('/login', (req, res) => {
             req.session.clinic_id = clinic.id;
             req.session.clinic_name = clinic.name;
 
-            res.json({
-                message: 'Clinic login successful',
-                clinic: { id: clinic.id, name: clinic.name }
+            // Explicitly save session to ensure cookie is set before responding
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('Session save error:', saveErr);
+                    return res.status(500).json({ error: 'Session error' });
+                }
+
+                res.json({
+                    message: 'Clinic login successful',
+                    clinic: { id: clinic.id, name: clinic.name }
+                });
             });
         }
     );

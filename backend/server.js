@@ -59,16 +59,18 @@ app.use(cors({
 
 app.use(express.json());
 
-// Session configuration
+// Session configuration with mobile browser compatibility
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'your_secret_key',
-  resave: false,
+  resave: true, // Force save even if session wasn't modified
   saveUninitialized: false,
+  rolling: true, // Reset expiry on every response  
   cookie: {
     secure: isProduction, // Use secure cookies in production (HTTPS)
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
-    sameSite: isProduction ? 'none' : 'lax' // Required for cross-origin in production
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days (longer for mobile convenience)
+    sameSite: isProduction ? 'none' : 'lax', // Required for cross-origin in production
+    path: '/'
   }
 };
 
