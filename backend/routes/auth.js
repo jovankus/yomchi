@@ -13,30 +13,36 @@ router.post('/login', (req, res) => {
     const { username, password } = req.body;
     const clinicId = req.session.clinic_id;
 
+    // Query users table joined with employees table
+    // users has username/password_hash, employees links user to clinic
     db.get(
-        'SELECT id, clinic_id, username, role, password_hash, active FROM employees WHERE username = ? AND clinic_id = ?',
+        `SELECT e.id as employee_id, e.clinic_id, e.role as employee_role, e.active,
+                u.id as user_id, u.username, u.password_hash, u.role as user_role
+         FROM users u
+         JOIN employees e ON e.user_id = u.id
+         WHERE u.username = ? AND e.clinic_id = ?`,
         [username, clinicId],
-        async (err, employee) => {
+        async (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
-            if (!employee) return res.status(401).json({ message: 'Invalid credentials' });
+            if (!result) return res.status(401).json({ message: 'Invalid credentials' });
 
-            if (!employee.active) {
+            if (!result.active) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            const match = await bcrypt.compare(password, employee.password_hash);
+            const match = await bcrypt.compare(password, result.password_hash);
             if (match) {
-                req.session.employeeId = employee.id;
-                req.session.username = employee.username;
-                req.session.role = employee.role;
+                req.session.employeeId = result.employee_id;
+                req.session.username = result.username;
+                req.session.role = result.employee_role || result.user_role;
                 // clinic_id already in session from clinic login
 
                 res.json({
                     message: 'Logged in successfully',
                     user: {
-                        id: employee.id,
-                        username: employee.username,
-                        role: employee.role,
+                        id: result.employee_id,
+                        username: result.username,
+                        role: result.employee_role || result.user_role,
                         clinic_id: clinicId
                     }
                 });
