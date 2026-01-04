@@ -1,7 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
+import { getAuthHeaders } from './ClinicContext';
 
 const AuthContext = createContext(null);
+
+// Token storage key
+const EMPLOYEE_TOKEN_KEY = 'yomchi_employee_token';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -10,7 +14,8 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/auth/me`, {
-                credentials: 'include' // Important for cookies
+                credentials: 'include',
+                headers: getAuthHeaders()
             });
             const data = await res.json();
             if (data.authenticated) {
@@ -31,15 +36,31 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (username, password) => {
+        // Get clinic token for mobile fallback
+        const clinicToken = localStorage.getItem('yomchi_clinic_token');
+
         const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                username,
+                password,
+                clinicToken: clinicToken // Send clinic token in body as backup
+            }),
             credentials: 'include'
         });
 
         if (res.ok) {
             const data = await res.json();
+
+            // Store JWT token for mobile browsers
+            if (data.token) {
+                localStorage.setItem(EMPLOYEE_TOKEN_KEY, data.token);
+            }
+
             setUser(data.user);
             return { success: true };
         } else {
@@ -51,8 +72,13 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         await fetch(`${API_BASE_URL}/auth/logout`, {
             method: 'POST',
-            credentials: 'include'
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
+
+        // Clear employee token (keep clinic token for switch user)
+        localStorage.removeItem(EMPLOYEE_TOKEN_KEY);
+
         setUser(null);
     };
 
@@ -64,3 +90,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

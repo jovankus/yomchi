@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// JWT secret - should match across all routes
+const JWT_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
 
 // POST /clinic/login - Authenticate clinic
 router.post('/login', (req, res) => {
@@ -32,20 +36,28 @@ router.post('/login', (req, res) => {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
-            // Set clinic in session
+            // Set clinic in session (for cookie-based auth)
             req.session.clinic_id = clinic.id;
             req.session.clinic_name = clinic.name;
+
+            // Generate JWT token for token-based auth (mobile browsers)
+            const token = jwt.sign(
+                { clinic_id: clinic.id, clinic_name: clinic.name, type: 'clinic' },
+                JWT_SECRET,
+                { expiresIn: '7d' }
+            );
 
             // Explicitly save session to ensure cookie is set before responding
             req.session.save((saveErr) => {
                 if (saveErr) {
                     console.error('Session save error:', saveErr);
-                    return res.status(500).json({ error: 'Session error' });
+                    // Still return response with token even if session fails
                 }
 
                 res.json({
                     message: 'Clinic login successful',
-                    clinic: { id: clinic.id, name: clinic.name }
+                    clinic: { id: clinic.id, name: clinic.name },
+                    token: token // JWT token for mobile browsers
                 });
             });
         }
@@ -59,22 +71,48 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Clinic session cleared' });
 });
 
-// GET /clinic/me - Get current clinic session state
+// GET /clinic/me - Get current clinic session state (supports both session and JWT)
 router.get('/me', (req, res) => {
+    // First check session (works on desktop)
     if (req.session.clinic_id) {
-        res.json({
+        return res.json({
             authenticated: true,
             clinic: {
                 id: req.session.clinic_id,
                 name: req.session.clinic_name
             }
         });
-    } else {
-        res.json({
-            authenticated: false,
-            clinic: null
-        });
     }
+
+    // Fallback to JWT token (for mobile browsers)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            if (decoded.type === 'clinic') {
+                // Set session data from token for subsequent requests on this connection
+                req.session.clinic_id = decoded.clinic_id;
+                req.session.clinic_name = decoded.clinic_name;
+
+                return res.json({
+                    authenticated: true,
+                    clinic: {
+                        id: decoded.clinic_id,
+                        name: decoded.clinic_name
+                    }
+                });
+            }
+        } catch (err) {
+            // Token invalid or expired
+            console.log('JWT verification failed:', err.message);
+        }
+    }
+
+    res.json({
+        authenticated: false,
+        clinic: null
+    });
 });
 
 module.exports = router;

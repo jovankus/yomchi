@@ -1,20 +1,56 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('../db');
 
-// POST /auth/login - Employee login (requires clinic session)
-router.post('/login', (req, res) => {
-    // Check clinic session first
-    if (!req.session.clinic_id) {
+// JWT secret - should match across all routes
+const JWT_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
+
+// POST /auth/login - Employee login (requires clinic session or JWT)
+router.post('/login', async (req, res) => {
+    const { username, password, clinicToken } = req.body;
+
+    // Get clinic info from session OR from JWT token (for mobile)
+    let clinicId = req.session.clinic_id;
+    let clinicName = req.session.clinic_name;
+
+    // If no session, try to get clinic from JWT token (mobile fallback)
+    if (!clinicId) {
+        // Check Authorization header first
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, JWT_SECRET);
+                if (decoded.type === 'clinic') {
+                    clinicId = decoded.clinic_id;
+                    clinicName = decoded.clinic_name;
+                }
+            } catch (err) {
+                // Token invalid
+            }
+        }
+
+        // Also check clinicToken in body (alternative for mobile)
+        if (!clinicId && clinicToken) {
+            try {
+                const decoded = jwt.verify(clinicToken, JWT_SECRET);
+                if (decoded.type === 'clinic') {
+                    clinicId = decoded.clinic_id;
+                    clinicName = decoded.clinic_name;
+                }
+            } catch (err) {
+                // Token invalid
+            }
+        }
+    }
+
+    if (!clinicId) {
         return res.status(401).json({ message: 'Clinic session required. Please login to a clinic first.' });
     }
 
-    const { username, password } = req.body;
-    const clinicId = req.session.clinic_id;
-
     // Query users table joined with employees table
-    // users has username/password_hash, employees links user to clinic
     db.get(
         `SELECT e.id as employee_id, e.clinic_id, e.role as employee_role, e.active,
                 u.id as user_id, u.username, u.password_hash, u.role as user_role
@@ -32,19 +68,38 @@ router.post('/login', (req, res) => {
 
             const match = await bcrypt.compare(password, result.password_hash);
             if (match) {
+                const role = result.employee_role || result.user_role;
+
+                // Set session (works on desktop)
                 req.session.employeeId = result.employee_id;
                 req.session.username = result.username;
-                req.session.role = result.employee_role || result.user_role;
-                // clinic_id already in session from clinic login
+                req.session.role = role;
+                req.session.clinic_id = clinicId;
+                req.session.clinic_name = clinicName;
+
+                // Generate employee JWT token for mobile
+                const employeeToken = jwt.sign(
+                    {
+                        type: 'employee',
+                        employee_id: result.employee_id,
+                        username: result.username,
+                        role: role,
+                        clinic_id: clinicId,
+                        clinic_name: clinicName
+                    },
+                    JWT_SECRET,
+                    { expiresIn: '7d' }
+                );
 
                 res.json({
                     message: 'Logged in successfully',
                     user: {
                         id: result.employee_id,
                         username: result.username,
-                        role: result.employee_role || result.user_role,
+                        role: role,
                         clinic_id: clinicId
-                    }
+                    },
+                    token: employeeToken // JWT token for mobile browsers
                 });
             } else {
                 res.status(401).json({ message: 'Invalid credentials' });
@@ -62,15 +117,16 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
-// GET /auth/me - Returns clinic + employee info
+// GET /auth/me - Returns clinic + employee info (supports both session and JWT)
 router.get('/me', (req, res) => {
-    const clinic = req.session.clinic_id ? {
-        id: req.session.clinic_id,
-        name: req.session.clinic_name
-    } : null;
-
+    // First check session (works on desktop)
     if (req.session.employeeId) {
-        res.json({
+        const clinic = req.session.clinic_id ? {
+            id: req.session.clinic_id,
+            name: req.session.clinic_name
+        } : null;
+
+        return res.json({
             authenticated: true,
             user: {
                 id: req.session.employeeId,
@@ -80,12 +136,58 @@ router.get('/me', (req, res) => {
             },
             clinic: clinic
         });
-    } else {
-        res.json({
-            authenticated: false,
-            clinic: clinic
-        });
     }
+
+    // Fallback to JWT token (for mobile browsers)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+
+            // Check for employee token
+            if (decoded.type === 'employee') {
+                return res.json({
+                    authenticated: true,
+                    user: {
+                        id: decoded.employee_id,
+                        username: decoded.username,
+                        role: decoded.role,
+                        clinic_id: decoded.clinic_id
+                    },
+                    clinic: {
+                        id: decoded.clinic_id,
+                        name: decoded.clinic_name
+                    }
+                });
+            }
+
+            // Check for clinic-only token (employee not yet logged in)
+            if (decoded.type === 'clinic') {
+                return res.json({
+                    authenticated: false,
+                    clinic: {
+                        id: decoded.clinic_id,
+                        name: decoded.clinic_name
+                    }
+                });
+            }
+        } catch (err) {
+            // Token invalid or expired
+            console.log('JWT verification failed:', err.message);
+        }
+    }
+
+    // No session and no valid token
+    const clinic = req.session.clinic_id ? {
+        id: req.session.clinic_id,
+        name: req.session.clinic_name
+    } : null;
+
+    res.json({
+        authenticated: false,
+        clinic: clinic
+    });
 });
 
 module.exports = router;

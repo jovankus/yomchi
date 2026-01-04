@@ -3,6 +3,22 @@ import { API_BASE_URL } from '../config';
 
 const ClinicContext = createContext(null);
 
+// Token storage key
+const CLINIC_TOKEN_KEY = 'yomchi_clinic_token';
+
+// Get auth headers for API calls
+export const getAuthHeaders = () => {
+    const clinicToken = localStorage.getItem(CLINIC_TOKEN_KEY);
+    const employeeToken = localStorage.getItem('yomchi_employee_token');
+    // Prefer employee token if available
+    const token = employeeToken || clinicToken;
+
+    if (token) {
+        return { 'Authorization': `Bearer ${token}` };
+    }
+    return {};
+};
+
 export const ClinicProvider = ({ children }) => {
     const [clinic, setClinic] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -10,10 +26,11 @@ export const ClinicProvider = ({ children }) => {
     const checkClinic = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/clinic/me`, {
-                credentials: 'include'
+                credentials: 'include',
+                headers: getAuthHeaders()
             });
             const data = await res.json();
-            if (data.authenticated) {
+            if (data.authenticated || data.clinic) {
                 setClinic(data.clinic);
             } else {
                 setClinic(null);
@@ -40,6 +57,12 @@ export const ClinicProvider = ({ children }) => {
 
         if (res.ok) {
             const data = await res.json();
+
+            // Store JWT token for mobile browsers
+            if (data.token) {
+                localStorage.setItem(CLINIC_TOKEN_KEY, data.token);
+            }
+
             setClinic(data.clinic);
             return { success: true };
         } else {
@@ -51,16 +74,23 @@ export const ClinicProvider = ({ children }) => {
     const logoutClinic = async () => {
         await fetch(`${API_BASE_URL}/clinic/logout`, {
             method: 'POST',
-            credentials: 'include'
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
+
+        // Clear tokens
+        localStorage.removeItem(CLINIC_TOKEN_KEY);
+        localStorage.removeItem('yomchi_employee_token');
+
         setClinic(null);
     };
 
     return (
-        <ClinicContext.Provider value={{ clinic, loading, loginClinic, logoutClinic }}>
+        <ClinicContext.Provider value={{ clinic, loading, loginClinic, logoutClinic, getAuthHeaders }}>
             {children}
         </ClinicContext.Provider>
     );
 };
 
 export const useClinic = () => useContext(ClinicContext);
+
