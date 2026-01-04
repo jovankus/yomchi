@@ -1,17 +1,23 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-// Role groups matching backend
+// Role groups matching backend (lowercase to match database)
 export const ROLES = {
-    SENIOR_DOCTOR: 'SENIOR_DOCTOR',
-    PERMANENT_DOCTOR: 'PERMANENT_DOCTOR',
-    DOCTOR: 'DOCTOR',
-    SECRETARY: 'SECRETARY'
+    SENIOR_DOCTOR: 'senior_doctor',
+    PERMANENT_DOCTOR: 'permanent_doctor',
+    DOCTOR: 'doctor',
+    SECRETARY: 'secretary',
+    // Also support legacy/alternative role names
+    ADMIN: 'admin',
+    STAFF: 'staff'
 };
 
-export const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR];
-export const CLINICAL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR];
-export const ALL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR, ROLES.SECRETARY];
+// Admin roles - full access
+export const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN];
+// Clinical roles - can access patients
+export const CLINICAL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
+// All roles
+export const ALL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR, ROLES.SECRETARY, ROLES.STAFF];
 
 // Component that protects routes based on allowed roles
 export default function RoleProtectedRoute({ allowedRoles, children }) {
@@ -29,8 +35,9 @@ export default function RoleProtectedRoute({ allowedRoles, children }) {
         return <Navigate to="/login" replace />;
     }
 
-    // Check if user's role is in the allowed roles
-    if (!allowedRoles.includes(user.role)) {
+    // Check if user's role is in the allowed roles (normalize to lowercase)
+    const userRole = user.role?.toLowerCase() || '';
+    if (!allowedRoles.includes(userRole)) {
         return <Navigate to="/not-authorized" replace />;
     }
 
@@ -41,5 +48,6 @@ export default function RoleProtectedRoute({ allowedRoles, children }) {
 // Helper function to check role access (for conditional rendering)
 export function hasAccess(userRole, allowedRoles) {
     if (!userRole || !allowedRoles) return false;
-    return allowedRoles.includes(userRole);
+    const normalizedRole = userRole.toLowerCase();
+    return allowedRoles.includes(normalizedRole);
 }

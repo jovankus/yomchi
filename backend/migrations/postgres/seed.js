@@ -47,13 +47,13 @@ async function seed() {
         const clinicId = clinicResult.rows[0].id;
         console.log(`✓ Clinic created with ID: ${clinicId}`);
 
-        // 2. Create users
+        // 2. Create users with roles that match frontend RoleProtectedRoute
         console.log('\nCreating users...');
         const users = [
-            { username: 'senior_doctor', role: 'admin', password: employeePasswords.senior_doctor },
-            { username: 'permanent_doctor', role: 'doctor', password: employeePasswords.permanent_doctor },
+            { username: 'senior_doctor', role: 'senior_doctor', password: employeePasswords.senior_doctor },
+            { username: 'permanent_doctor', role: 'permanent_doctor', password: employeePasswords.permanent_doctor },
             { username: 'doctor', role: 'doctor', password: employeePasswords.doctor },
-            { username: 'secretary', role: 'staff', password: employeePasswords.secretary }
+            { username: 'secretary', role: 'secretary', password: employeePasswords.secretary }
         ];
 
         for (const user of users) {
