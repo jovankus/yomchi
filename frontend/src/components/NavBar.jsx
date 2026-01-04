@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useClinic } from '../context/ClinicContext';
@@ -44,7 +45,7 @@ function NavLink({ to, children }) {
 export default function NavBar() {
     const { user, logout } = useAuth();
     const { clinic, logoutClinic } = useClinic();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     if (!user) return null;
 
