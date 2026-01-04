@@ -63,6 +63,10 @@ export const ClinicProvider = ({ children }) => {
                 localStorage.setItem(CLINIC_TOKEN_KEY, data.token);
             }
 
+            // CRITICAL: Clear any existing employee token when logging into a clinic
+            // This prevents "auto-login" with stale credentials from a different session
+            localStorage.removeItem('yomchi_employee_token');
+
             setClinic(data.clinic);
             return { success: true };
         } else {

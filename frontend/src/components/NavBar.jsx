@@ -191,6 +191,8 @@ export default function NavBar() {
                                 <div className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Accounting</div>
                                 <Link to="/daily-summary" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Daily Ledger</Link>
                                 <Link to="/monthly-report" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Monthly Report</Link>
+                                <Link to="/financial-events" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>All Events</Link>
+                                <Link to="/backup-settings" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Backup</Link>
                             </div>
                         )}
 
@@ -198,8 +200,12 @@ export default function NavBar() {
                             <div className="space-y-1 pt-2">
                                 <div className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Inventory</div>
                                 <Link to="/inventory-items" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Items Catalog</Link>
+                                <Link to="/inventory-batches" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Stock & Batches</Link>
                                 <Link to="/inventory-dispense" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Dispense</Link>
-                                <Link to="/inventory-alerts" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Alerts</Link>
+                                <Link to="/inventory-movements" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Movement Log</Link>
+                                <Link to="/suppliers" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Suppliers</Link>
+                                <Link to="/pharmacies" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Pharmacies</Link>
+                                <Link to="/inventory-alerts" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Alerts & Expiry</Link>
                             </div>
                         )}
 
