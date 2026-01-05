@@ -76,15 +76,34 @@ async function seed() {
             console.log(`  → Linked to clinic as employee`);
         }
 
+        // 4. Create clinic_roles for role-based authentication
+        console.log('\nCreating clinic roles...');
+        const rolePasswords = {
+            SENIOR_DOCTOR: 'Nv3@wQ8#hT6!yU9$',
+            PERMANENT_DOCTOR: 'Bm7$rK4@jX2#fW5!',
+            DOCTOR: 'Zp6!cN9@dL3#sY8$',
+            SECRETARY: 'Hg2#tV5!mR8@kJ4$'
+        };
+
+        for (const [role, password] of Object.entries(rolePasswords)) {
+            const rolePasswordHash = await bcrypt.hash(password, 10);
+            await pool.query(`
+                INSERT INTO clinic_roles (clinic_id, role, password_hash, active)
+                VALUES ($1, $2, $3, 1)
+                ON CONFLICT (clinic_id, role) DO UPDATE SET password_hash = $3, active = 1
+            `, [clinicId, role, rolePasswordHash]);
+            console.log(`✓ Created role: ${role}`);
+        }
+
         console.log('\n✓ Database seeded successfully!');
         console.log('\n--- Login Credentials ---');
         console.log('Clinic: Arjana Clinic');
         console.log('Password: Kx9#mP2$vL7!qR4@');
-        console.log('\nEmployees:');
-        console.log('  senior_doctor / Nv3@wQ8#hT6!yU9$');
-        console.log('  permanent_doctor / Bm7$rK4@jX2#fW5!');
-        console.log('  doctor / Zp6!cN9@dL3#sY8$');
-        console.log('  secretary / Hg2#tV5!mR8@kJ4$');
+        console.log('\nRole Passwords:');
+        console.log('  SENIOR_DOCTOR / Nv3@wQ8#hT6!yU9$');
+        console.log('  PERMANENT_DOCTOR / Bm7$rK4@jX2#fW5!');
+        console.log('  DOCTOR / Zp6!cN9@dL3#sY8$');
+        console.log('  SECRETARY / Hg2#tV5!mR8@kJ4$');
 
     } catch (err) {
         console.error('Seed error:', err);

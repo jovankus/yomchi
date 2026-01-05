@@ -275,6 +275,30 @@ const migrations = [
         created_by INTEGER REFERENCES users(id)
     )`,
 
+    // 026 - Clinic Roles table (for role-based authentication)
+    `CREATE TABLE IF NOT EXISTS clinic_roles (
+        id SERIAL PRIMARY KEY,
+        clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+        role TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(clinic_id, role)
+    )`,
+
+    // 027 - Device Sessions table (for Remember Me functionality)
+    `CREATE TABLE IF NOT EXISTS device_sessions (
+        id SERIAL PRIMARY KEY,
+        clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+        role TEXT NOT NULL,
+        token_hash TEXT NOT NULL,
+        device_name TEXT,
+        last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        revoked_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+
     // Migrations tracking table
     `CREATE TABLE IF NOT EXISTS _migrations (
         id SERIAL PRIMARY KEY,
