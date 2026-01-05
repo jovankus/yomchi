@@ -1,21 +1,20 @@
 /**
- * Password Rotation Script with Environment Variable Support
+ * Password Rotation Script for Yomchi Healthcare
  * 
- * This script allows rotating passwords via environment variables.
- * Passwords are NEVER logged or stored in plaintext - only hashes are saved.
+ * This script allows rotating passwords via environment variables OR auto-generating them.
+ * Passwords are printed ONCE to console and then only hashes are saved.
  * 
- * Environment Variables:
- * - CLINIC_PASSWORD: New password for clinic gate (20+ chars recommended)
- * - SENIOR_DOCTOR_PASSWORD: New password for senior_doctor
- * - PERMANENT_DOCTOR_PASSWORD: New password for permanent_doctor
- * - DOCTOR_PASSWORD: New password for doctor
- * - SECRETARY_PASSWORD: New password for secretary
+ * Environment Variables (optional - if not set, will auto-generate):
+ * - CLINIC_PASSWORD: New password for clinic gate (20+ chars)
+ * - SENIOR_DOCTOR_PASSWORD: New password for SENIOR_DOCTOR role (16+ chars)
+ * - PERMANENT_DOCTOR_PASSWORD: New password for PERMANENT_DOCTOR role (16+ chars)
+ * - DOCTOR_PASSWORD: New password for DOCTOR role (16+ chars)
+ * - SECRETARY_PASSWORD: New password for SECRETARY role (16+ chars)
  * 
  * Usage:
- *   set CLINIC_PASSWORD=YourNewStrongPassword && node rotate_passwords.js
- * 
- * Or for all at once:
- *   set CLINIC_PASSWORD=... && set SENIOR_DOCTOR_PASSWORD=... && node rotate_passwords.js
+ *   node rotate_passwords.js              # Show help
+ *   node rotate_passwords.js --generate   # Generate and save strong passwords
+ *   node rotate_passwords.js --apply      # Apply passwords from env vars
  */
 
 require('dotenv').config();
@@ -54,128 +53,122 @@ function validatePassword(password, minLength, label) {
     return true;
 }
 
+async function runDbQuery(sql, params) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function (err) {
+            if (err) reject(err);
+            else resolve(this.changes);
+        });
+    });
+}
+
 async function rotatePasswords() {
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log('                 PASSWORD ROTATION UTILITY                      ');
+    console.log('       YOMCHI HEALTHCARE - PASSWORD ROTATION UTILITY           ');
     console.log('═══════════════════════════════════════════════════════════════');
     console.log('');
 
-    const updates = [];
+    const generateMode = process.argv.includes('--generate');
+    const applyMode = process.argv.includes('--apply');
 
-    // Check for clinic password update
-    const clinicPassword = process.env.CLINIC_PASSWORD;
-    if (clinicPassword) {
-        if (!validatePassword(clinicPassword, 20, 'CLINIC_PASSWORD')) {
-            process.exit(1);
-        }
-
-        const hash = bcrypt.hashSync(clinicPassword, 12);
-        updates.push({
-            type: 'clinic',
-            name: 'Arjana Clinic',
-            hash
-        });
-    }
-
-    // Check for employee password updates
-    const employeeEnvs = [
-        { env: 'SENIOR_DOCTOR_PASSWORD', username: 'senior_doctor', minLength: 16 },
-        { env: 'PERMANENT_DOCTOR_PASSWORD', username: 'permanent_doctor', minLength: 16 },
-        { env: 'DOCTOR_PASSWORD', username: 'doctor', minLength: 16 },
-        { env: 'SECRETARY_PASSWORD', username: 'secretary', minLength: 16 }
-    ];
-
-    for (const emp of employeeEnvs) {
-        const password = process.env[emp.env];
-        if (password) {
-            if (!validatePassword(password, emp.minLength, emp.env)) {
-                process.exit(1);
-            }
-
-            const hash = bcrypt.hashSync(password, 12);
-            updates.push({
-                type: 'employee',
-                username: emp.username,
-                hash
-            });
-        }
-    }
-
-    if (updates.length === 0) {
-        console.log('No password environment variables detected.');
+    if (!generateMode && !applyMode) {
+        console.log('Usage:');
+        console.log('  node rotate_passwords.js --generate    Generate and save new passwords');
+        console.log('  node rotate_passwords.js --apply       Apply passwords from env vars');
         console.log('');
-        console.log('To rotate passwords, set environment variables:');
-        console.log('  CLINIC_PASSWORD=<20+ char strong password>');
-        console.log('  SENIOR_DOCTOR_PASSWORD=<16+ char strong password>');
-        console.log('  PERMANENT_DOCTOR_PASSWORD=<16+ char strong password>');
-        console.log('  DOCTOR_PASSWORD=<16+ char strong password>');
-        console.log('  SECRETARY_PASSWORD=<16+ char strong password>');
+        console.log('The --generate option will:');
+        console.log('  1. Generate strong random passwords');
+        console.log('  2. Print them ONCE to console (save them securely!)');
+        console.log('  3. Save only the hashes to the database');
         console.log('');
-        console.log('Example:');
-        console.log('  set CLINIC_PASSWORD=MyStr0ng!P@ssw0rd#2024 && node rotate_passwords.js');
-
-        // Option to generate passwords
-        if (process.argv.includes('--generate')) {
-            console.log('');
-            console.log('═══════════════════════════════════════════════════════════════');
-            console.log('           GENERATED STRONG PASSWORDS (copy securely!)         ');
-            console.log('═══════════════════════════════════════════════════════════════');
-            console.log('');
-            console.log('⚠️  SAVE THESE PASSWORDS SECURELY - THEY ARE SHOWN ONLY ONCE!');
-            console.log('');
-            console.log(`Clinic (20 chars):           ${generateStrongPassword(20)}`);
-            console.log(`Senior Doctor (16 chars):    ${generateStrongPassword(16)}`);
-            console.log(`Permanent Doctor (16 chars): ${generateStrongPassword(16)}`);
-            console.log(`Doctor (16 chars):           ${generateStrongPassword(16)}`);
-            console.log(`Secretary (16 chars):        ${generateStrongPassword(16)}`);
-            console.log('');
-        } else {
-            console.log('');
-            console.log('Tip: Run with --generate to create strong random passwords:');
-            console.log('  node rotate_passwords.js --generate');
-        }
-
         process.exit(0);
     }
 
-    // Process updates
-    console.log(`Processing ${updates.length} password update(s)...`);
-    console.log('');
+    const passwords = {};
 
-    for (const update of updates) {
-        await new Promise((resolve, reject) => {
-            if (update.type === 'clinic') {
-                db.run(
-                    'UPDATE clinics SET password_hash = ? WHERE name = ?',
-                    [update.hash, update.name],
-                    function (err) {
-                        if (err) reject(err);
-                        else {
-                            console.log(`✅ ${update.name} password updated (hash stored)`);
-                            resolve();
-                        }
-                    }
-                );
-            } else {
-                db.run(
-                    'UPDATE employees SET password_hash = ? WHERE username = ?',
-                    [update.hash, update.username],
-                    function (err) {
-                        if (err) reject(err);
-                        else {
-                            console.log(`✅ ${update.username} password updated (hash stored)`);
-                            resolve();
-                        }
-                    }
-                );
-            }
-        });
+    if (generateMode) {
+        // Generate all passwords
+        passwords.clinic = generateStrongPassword(24);
+        passwords.SENIOR_DOCTOR = generateStrongPassword(20);
+        passwords.PERMANENT_DOCTOR = generateStrongPassword(20);
+        passwords.DOCTOR = generateStrongPassword(18);
+        passwords.SECRETARY = generateStrongPassword(18);
+    } else {
+        // Use env vars
+        passwords.clinic = process.env.CLINIC_PASSWORD;
+        passwords.SENIOR_DOCTOR = process.env.SENIOR_DOCTOR_PASSWORD;
+        passwords.PERMANENT_DOCTOR = process.env.PERMANENT_DOCTOR_PASSWORD;
+        passwords.DOCTOR = process.env.DOCTOR_PASSWORD;
+        passwords.SECRETARY = process.env.SECRETARY_PASSWORD;
+
+        // Validate
+        let valid = true;
+        if (passwords.clinic && !validatePassword(passwords.clinic, 20, 'CLINIC_PASSWORD')) valid = false;
+        if (passwords.SENIOR_DOCTOR && !validatePassword(passwords.SENIOR_DOCTOR, 16, 'SENIOR_DOCTOR_PASSWORD')) valid = false;
+        if (passwords.PERMANENT_DOCTOR && !validatePassword(passwords.PERMANENT_DOCTOR, 16, 'PERMANENT_DOCTOR_PASSWORD')) valid = false;
+        if (passwords.DOCTOR && !validatePassword(passwords.DOCTOR, 16, 'DOCTOR_PASSWORD')) valid = false;
+        if (passwords.SECRETARY && !validatePassword(passwords.SECRETARY, 16, 'SECRETARY_PASSWORD')) valid = false;
+
+        if (!valid) process.exit(1);
+
+        const hasAny = Object.values(passwords).some(p => p);
+        if (!hasAny) {
+            console.log('No password environment variables set.');
+            console.log('Use --generate to auto-generate passwords.');
+            process.exit(0);
+        }
     }
 
     console.log('');
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log('Password rotation complete. Only bcrypt hashes have been stored.');
-    console.log('The original passwords were NOT logged or saved anywhere.');
+    console.log('   ⚠️  SAVE THESE PASSWORDS - THEY ARE SHOWN ONLY ONCE!  ⚠️   ');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('');
+
+    // Update clinic password
+    if (passwords.clinic) {
+        console.log(`📋 CLINIC: Yomchi Healthcare`);
+        console.log(`   Password: ${passwords.clinic}`);
+        console.log('');
+
+        const hash = bcrypt.hashSync(passwords.clinic, 12);
+        // Try updating with new name first, then old name as fallback
+        let changes = await runDbQuery(
+            'UPDATE clinics SET password_hash = ? WHERE name = ?',
+            [hash, 'Yomchi Healthcare']
+        );
+        if (changes === 0) {
+            changes = await runDbQuery(
+                'UPDATE clinics SET password_hash = ? WHERE name = ?',
+                [hash, 'Arjana Clinic']
+            );
+        }
+        console.log(`   ✅ Clinic password updated (${changes} row(s))`);
+        console.log('');
+    }
+
+    // Update role passwords in clinic_roles table
+    const roles = ['SENIOR_DOCTOR', 'PERMANENT_DOCTOR', 'DOCTOR', 'SECRETARY'];
+    for (const role of roles) {
+        if (passwords[role]) {
+            const displayRole = role.replace('_', ' ');
+            console.log(`📋 ${displayRole}`);
+            console.log(`   Password: ${passwords[role]}`);
+
+            const hash = bcrypt.hashSync(passwords[role], 12);
+            const changes = await runDbQuery(
+                'UPDATE clinic_roles SET password_hash = ? WHERE role = ?',
+                [hash, role]
+            );
+            console.log(`   ✅ ${role} password updated (${changes} row(s))`);
+            console.log('');
+        }
+    }
+
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('Password rotation complete.');
+    console.log('Only bcrypt hashes have been saved to the database.');
+    console.log('COPY THE PASSWORDS ABOVE AND STORE THEM SECURELY!');
     console.log('═══════════════════════════════════════════════════════════════');
 
     process.exit(0);
