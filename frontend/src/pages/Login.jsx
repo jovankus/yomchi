@@ -7,8 +7,15 @@ import { Input } from '../components/Input';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 
+const ROLES = [
+    { value: 'SENIOR_DOCTOR', label: 'Senior Doctor' },
+    { value: 'PERMANENT_DOCTOR', label: 'Permanent Doctor' },
+    { value: 'DOCTOR', label: 'Doctor' },
+    { value: 'SECRETARY', label: 'Secretary' }
+];
+
 export default function Login() {
-    const [username, setUsername] = useState('');
+    const [role, setRole] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -18,7 +25,11 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const res = await login(username, password);
+        if (!role) {
+            setError('Please select a role');
+            return;
+        }
+        const res = await login(role, password);
         if (res.success) {
             navigate('/appointments');
         } else {
@@ -47,7 +58,7 @@ export default function Login() {
                         <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-bold">
                             2
                         </div>
-                        <span className="ml-2 text-sm text-primary-600 font-medium">Employee</span>
+                        <span className="ml-2 text-sm text-primary-600 font-medium">Role</span>
                     </div>
                 </div>
 
@@ -63,28 +74,34 @@ export default function Login() {
                             </button>
                         </div>
                     )}
-                    <h1 className="text-2xl font-bold text-slate-800 mb-1">Employee Login</h1>
-                    <p className="text-slate-500 text-sm">Sign in to continue to {clinic?.name || 'the clinic'}</p>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-1">Select Your Role</h1>
+                    <p className="text-slate-500 text-sm">Choose your role and enter the password</p>
                 </div>
 
                 {error && <Alert variant="error" className="mb-4">{error}</Alert>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                        label="Username"
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter your username"
-                        required
-                    />
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-slate-700">Role</label>
+                        <select
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-slate-900 text-base"
+                            required
+                        >
+                            <option value="">Select your role...</option>
+                            {ROLES.map(r => (
+                                <option key={r.value} value={r.value}>{r.label}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <Input
                         label="Password"
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
+                        placeholder="Enter the role password"
                         required
                     />
 

@@ -7,9 +7,9 @@ const db = require('../db');
 // JWT secret - should match across all routes
 const JWT_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
 
-// POST /auth/login - Employee login (requires clinic session or JWT)
+// POST /auth/login - Role-based login (requires clinic session or JWT)
 router.post('/login', async (req, res) => {
-    const { username, password, clinicToken } = req.body;
+    const { role, password, clinicToken } = req.body;
 
     // Get clinic info from session OR from JWT token (for mobile)
     let clinicId = req.session.clinic_id;
@@ -50,30 +50,29 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Clinic session required. Please login to a clinic first.' });
     }
 
-    // Query users table joined with employees table
-    db.get(
-        `SELECT e.id as employee_id, e.clinic_id, e.role as employee_role, e.active,
-                u.id as user_id, u.username, u.password_hash, u.role as user_role
-         FROM users u
-         JOIN employees e ON e.user_id = u.id
-         WHERE u.username = ? AND e.clinic_id = ?`,
-        [username, clinicId],
-        async (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            if (!result) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!role || !password) {
+        return res.status(400).json({ message: 'Role and password are required' });
+    }
 
-            if (!result.active) {
+    // Query clinic_roles table for role-based auth
+    db.get(
+        `SELECT id, clinic_id, role, password_hash, active
+         FROM clinic_roles
+         WHERE clinic_id = ? AND role = ?`,
+        [clinicId, role.toUpperCase()],
+        async (err, roleRecord) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!roleRecord) return res.status(401).json({ message: 'Invalid credentials' });
+
+            if (!roleRecord.active) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            const match = await bcrypt.compare(password, result.password_hash);
+            const match = await bcrypt.compare(password, roleRecord.password_hash);
             if (match) {
-                const role = result.employee_role || result.user_role;
-
                 // Set session (works on desktop)
-                req.session.employeeId = result.employee_id;
-                req.session.username = result.username;
-                req.session.role = role;
+                req.session.roleId = roleRecord.id;
+                req.session.role = roleRecord.role;
                 req.session.clinic_id = clinicId;
                 req.session.clinic_name = clinicName;
 
@@ -81,9 +80,8 @@ router.post('/login', async (req, res) => {
                 const employeeToken = jwt.sign(
                     {
                         type: 'employee',
-                        employee_id: result.employee_id,
-                        username: result.username,
-                        role: role,
+                        role_id: roleRecord.id,
+                        role: roleRecord.role,
                         clinic_id: clinicId,
                         clinic_name: clinicName
                     },
@@ -94,9 +92,8 @@ router.post('/login', async (req, res) => {
                 res.json({
                     message: 'Logged in successfully',
                     user: {
-                        id: result.employee_id,
-                        username: result.username,
-                        role: role,
+                        id: roleRecord.id,
+                        role: roleRecord.role.toLowerCase(),
                         clinic_id: clinicId
                     },
                     token: employeeToken // JWT token for mobile browsers
@@ -110,16 +107,36 @@ router.post('/login', async (req, res) => {
 
 // POST /auth/logout - Clear employee session (keep clinic session)
 router.post('/logout', (req, res) => {
-    // Clear only employee-related session data, keep clinic
+    // Clear only role-related session data, keep clinic
+    req.session.roleId = null;
+    req.session.role = null;
+    // Also clear old employee data if present
     req.session.employeeId = null;
     req.session.username = null;
-    req.session.role = null;
     res.json({ message: 'Logged out successfully' });
 });
 
-// GET /auth/me - Returns clinic + employee info (supports both session and JWT)
+// GET /auth/me - Returns clinic + role info (supports both session and JWT)
 router.get('/me', (req, res) => {
-    // First check session (works on desktop)
+    // First check session for role-based auth
+    if (req.session.roleId) {
+        const clinic = req.session.clinic_id ? {
+            id: req.session.clinic_id,
+            name: req.session.clinic_name
+        } : null;
+
+        return res.json({
+            authenticated: true,
+            user: {
+                id: req.session.roleId,
+                role: req.session.role?.toLowerCase(),
+                clinic_id: req.session.clinic_id
+            },
+            clinic: clinic
+        });
+    }
+
+    // Legacy: Check for old employee session
     if (req.session.employeeId) {
         const clinic = req.session.clinic_id ? {
             id: req.session.clinic_id,
@@ -131,7 +148,7 @@ router.get('/me', (req, res) => {
             user: {
                 id: req.session.employeeId,
                 username: req.session.username,
-                role: req.session.role,
+                role: req.session.role?.toLowerCase(),
                 clinic_id: req.session.clinic_id
             },
             clinic: clinic
@@ -145,14 +162,13 @@ router.get('/me', (req, res) => {
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
 
-            // Check for employee token
+            // Check for employee/role token
             if (decoded.type === 'employee') {
                 return res.json({
                     authenticated: true,
                     user: {
-                        id: decoded.employee_id,
-                        username: decoded.username,
-                        role: decoded.role,
+                        id: decoded.role_id || decoded.employee_id,
+                        role: decoded.role?.toLowerCase(),
                         clinic_id: decoded.clinic_id
                     },
                     clinic: {

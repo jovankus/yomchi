@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
     }, []);
 
-    const login = async (username, password) => {
+    const login = async (role, password) => {
         // Get clinic token for mobile fallback
         const clinicToken = localStorage.getItem('yomchi_clinic_token');
 
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
                 ...getAuthHeaders()
             },
             body: JSON.stringify({
-                username,
+                role,
                 password,
                 clinicToken: clinicToken // Send clinic token in body as backup
             }),
