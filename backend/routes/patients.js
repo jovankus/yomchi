@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { requireAuth, requireRole, CLINICAL_ROLES, ADMIN_ROLES } = require('../middleware/auth');
+const { requireAuth, requireRole, PATIENT_VIEW_ROLES, ADMIN_ROLES } = require('../middleware/auth');
 
-// Apply role check to all patient routes - Doctors+ can access patients
+// RBAC: PERMANENT_DOCTOR and DOCTOR can access patients
+// SENIOR_DOCTOR: Only final reports (separate routes)
+// SECRETARY: No patient access
 
 // List patients with optional search
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { search } = req.query;
     let query = 'SELECT * FROM patients';
     let params = [];
@@ -26,7 +28,7 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // Get single patient
-router.get('/:id', requireAuth, (req, res) => {
+router.get('/:id', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     db.get('SELECT * FROM patients WHERE id = ?', [req.params.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ message: 'Patient not found' });
@@ -35,7 +37,7 @@ router.get('/:id', requireAuth, (req, res) => {
 });
 
 // Get patient notes
-router.get('/:id/notes', requireAuth, (req, res) => {
+router.get('/:id/notes', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { id } = req.params;
     const query = `
         SELECT n.*, u.username as author_username 
@@ -51,7 +53,7 @@ router.get('/:id/notes', requireAuth, (req, res) => {
 });
 
 // Get patient's recent appointments (for follow-up workflow)
-router.get('/:id/recent-appointments', requireAuth, (req, res) => {
+router.get('/:id/recent-appointments', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { id } = req.params;
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -74,7 +76,7 @@ router.get('/:id/recent-appointments', requireAuth, (req, res) => {
 
 
 // Create patient
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { first_name, last_name, date_of_birth, phone, email, address,
         place_of_living, education_level, marital_status, occupation, living_with, has_asd } = req.body;
 
@@ -100,7 +102,7 @@ router.post('/', requireAuth, (req, res) => {
 });
 
 // Update patient
-router.put('/:id', requireAuth, (req, res) => {
+router.put('/:id', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { first_name, last_name, date_of_birth, phone, email, address,
         place_of_living, education_level, marital_status, occupation, living_with, has_asd } = req.body;
     const { id } = req.params;
@@ -123,8 +125,8 @@ router.put('/:id', requireAuth, (req, res) => {
         });
 });
 
-// Delete patient (Soft delete or hard delete? Assuming hard delete for simplicity for now as per instructions)
-router.delete('/:id', requireAuth, (req, res) => {
+// Delete patient - Admin only
+router.delete('/:id', requireRole(ADMIN_ROLES), (req, res) => {
     db.run('DELETE FROM patients WHERE id = ?', [req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ message: 'Patient not found' });

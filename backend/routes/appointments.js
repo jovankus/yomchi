@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { requireAuth, requireRole, ALL_ROLES } = require('../middleware/auth');
+const { requireAuth, requireRole, APPOINTMENT_ROLES } = require('../middleware/auth');
 
-// All roles can access appointments
+// RBAC: All roles can access appointments
+// SENIOR_DOCTOR, PERMANENT_DOCTOR, DOCTOR, SECRETARY
 
 // Helper to check for conflicts
 // Returns true if conflict found

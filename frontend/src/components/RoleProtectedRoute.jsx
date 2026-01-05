@@ -12,11 +12,17 @@ export const ROLES = {
     STAFF: 'staff'
 };
 
-// Admin roles - full access
+// RBAC Role Groups per requirements:
+// SENIOR_DOCTOR: Final reports only (no patient data)
+// PERMANENT_DOCTOR: Full access
+// DOCTOR: Patient demographics + history only  
+// SECRETARY: Appointments only
+
+// Admin roles - full access to accounting/inventory
 export const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN];
-// Clinical roles - can access patients
-export const CLINICAL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
-// All roles
+// Clinical roles - can access patient data (excludes SENIOR_DOCTOR as they only see reports)
+export const CLINICAL_ROLES = [ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
+// All roles for appointments
 export const ALL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR, ROLES.SECRETARY, ROLES.STAFF];
 
 // Component that protects routes based on allowed roles

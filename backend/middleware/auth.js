@@ -1,4 +1,4 @@
-// Role-based access control middleware
+// Role-based access control middleware for Yomchi Healthcare
 
 const ROLES = {
     SENIOR_DOCTOR: 'SENIOR_DOCTOR',
@@ -15,12 +15,13 @@ const ROLE_LEVELS = {
     SECRETARY: 1
 };
 
-// Check if employee is authenticated
+// Check if employee is authenticated (works with both old and new session structure)
 const requireAuth = (req, res, next) => {
-    if (req.session && req.session.employeeId) {
+    // Check for role-based auth (new) or employeeId (legacy)
+    if (req.session && (req.session.role || req.session.roleId || req.session.employeeId)) {
         next();
     } else {
-        res.status(401).json({ message: 'Unauthorized - Employee login required' });
+        res.status(401).json({ message: 'Unauthorized - Login required' });
     }
 };
 
@@ -36,18 +37,21 @@ const requireClinic = (req, res, next) => {
 // Require specific roles (accepts array of allowed roles)
 const requireRole = (allowedRoles) => {
     return (req, res, next) => {
-        if (!req.session || !req.session.employeeId) {
+        // Check for authentication
+        if (!req.session || (!req.session.role && !req.session.employeeId)) {
             return res.status(401).json({ message: 'Unauthorized - Login required' });
         }
 
-        const userRole = req.session.role;
+        const userRole = req.session.role?.toUpperCase();
 
         if (!userRole) {
             return res.status(403).json({ message: 'Forbidden - No role assigned' });
         }
 
-        // Check if user's role is in the allowed roles array
-        if (allowedRoles.includes(userRole)) {
+        // Normalize role names for comparison
+        const normalizedAllowedRoles = allowedRoles.map(r => r.toUpperCase());
+
+        if (normalizedAllowedRoles.includes(userRole)) {
             next();
         } else {
             res.status(403).json({
@@ -59,9 +63,17 @@ const requireRole = (allowedRoles) => {
     };
 };
 
-// Shorthand role groups
+// Shorthand role groups based on new RBAC requirements
+// SENIOR_DOCTOR: Final reports only
+// PERMANENT_DOCTOR: Full access  
+// DOCTOR: Patient demographics + history only
+// SECRETARY: Appointments only
+
 const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR];
-const CLINICAL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR];
+const CLINICAL_ROLES = [ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR]; // Doctors who can access full patient data
+const PATIENT_VIEW_ROLES = [ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR]; // Can view patients
+const REPORT_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR]; // Can access reports
+const APPOINTMENT_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR, ROLES.SECRETARY]; // All can manage appointments
 const ALL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.DOCTOR, ROLES.SECRETARY];
 
 module.exports = {
@@ -72,5 +84,8 @@ module.exports = {
     ROLE_LEVELS,
     ADMIN_ROLES,
     CLINICAL_ROLES,
+    PATIENT_VIEW_ROLES,
+    REPORT_ROLES,
+    APPOINTMENT_ROLES,
     ALL_ROLES
 };
