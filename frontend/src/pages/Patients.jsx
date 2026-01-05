@@ -45,6 +45,12 @@ export default function Patients() {
         }
     };
 
+    // Format phone for WhatsApp (remove non-digits)
+    const formatPhoneForWhatsApp = (phone) => {
+        if (!phone) return null;
+        return phone.replace(/\D/g, '');
+    };
+
     return (
         <div>
             <PageTitle
@@ -90,6 +96,18 @@ export default function Patients() {
                                         <Link to={`/appointments/new?patient_id=${p.id}`}>
                                             <Button variant="ghost" size="sm">📅 Schedule</Button>
                                         </Link>
+                                        {p.phone && (
+                                            <a
+                                                href={`https://wa.me/${formatPhoneForWhatsApp(p.phone)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="Message on WhatsApp"
+                                            >
+                                                <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700">
+                                                    💬 WA
+                                                </Button>
+                                            </a>
+                                        )}
                                         <Link to={`/patients/${p.id}`}>
                                             <Button variant="ghost" size="sm">Edit</Button>
                                         </Link>
