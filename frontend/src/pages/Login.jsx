@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useClinic } from '../context/ClinicContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,10 +17,28 @@ const ROLES = [
 export default function Login() {
     const [role, setRole] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const { login, deviceLogin } = useAuth();
     const { clinic, logoutClinic } = useClinic();
     const navigate = useNavigate();
+
+    // Try device auto-login on mount
+    useEffect(() => {
+        const tryDeviceLogin = async () => {
+            const deviceToken = localStorage.getItem('yomchi_device_token');
+            if (deviceToken && deviceLogin) {
+                setLoading(true);
+                const result = await deviceLogin(deviceToken);
+                if (result.success) {
+                    navigate('/appointments');
+                }
+                setLoading(false);
+            }
+        };
+        tryDeviceLogin();
+    }, [deviceLogin, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -29,7 +47,9 @@ export default function Login() {
             setError('Please select a role');
             return;
         }
-        const res = await login(role, password);
+        setLoading(true);
+        const res = await login(role, password, rememberDevice);
+        setLoading(false);
         if (res.success) {
             navigate('/appointments');
         } else {
@@ -41,6 +61,17 @@ export default function Login() {
         await logoutClinic();
         navigate('/clinic-login');
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-primary-50 via-slate-50 to-primary-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                    <p className="text-slate-600">Checking device session...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary-50 via-slate-50 to-primary-100 flex items-center justify-center px-4">
@@ -105,8 +136,22 @@ export default function Login() {
                         required
                     />
 
-                    <Button type="submit" className="w-full" size="lg">
-                        Sign In
+                    {/* Remember This Device Checkbox */}
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="rememberDevice"
+                            checked={rememberDevice}
+                            onChange={(e) => setRememberDevice(e.target.checked)}
+                            className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
+                        />
+                        <label htmlFor="rememberDevice" className="text-sm text-slate-600">
+                            Remember this device (stay logged in for 60 days)
+                        </label>
+                    </div>
+
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </Button>
                 </form>
 
