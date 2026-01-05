@@ -93,6 +93,7 @@ app.use('/patients', require('./routes/symptoms'));
 app.use('/patients', require('./routes/documents'));
 app.use('/patients', require('./routes/asd-profile'));
 app.use('/patients', require('./routes/asd-forms'));
+app.use('/patients', require('./routes/final-reports'));
 app.use('/', require('./routes/documents')); // For /documents/:id/file endpoint
 app.use('/patients', require('./routes/patients'));
 app.use('/appointments', require('./routes/appointments'));
