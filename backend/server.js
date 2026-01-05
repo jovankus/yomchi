@@ -120,6 +120,6 @@ app.get('/protected', requireAuth, (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Yomchi backend running on http://localhost:${port}`);
+  console.log(`Yomchi Healthcare backend running on http://localhost:${port}`);
   console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 });

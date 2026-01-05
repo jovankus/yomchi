@@ -76,7 +76,7 @@ export default function NavBar() {
                     {/* Logo and Navigation */}
                     <div className="flex items-center gap-6">
                         <Link to="/" className="flex items-center shrink-0">
-                            <span className="text-xl font-bold text-primary-600">PracticeClone</span>
+                            <span className="text-xl font-bold text-primary-600">Yomchi Healthcare</span>
                             {clinic && (
                                 <span className="ml-2 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full hidden sm:inline-block">
                                     {clinic.name}
