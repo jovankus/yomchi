@@ -22,6 +22,8 @@ export const ROLES = {
 export const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN];
 // Clinical roles - can access patient data (excludes SENIOR_DOCTOR as they only see reports)
 export const CLINICAL_ROLES = [ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
+// Report roles - can access read-only patient reports (SENIOR_DOCTOR special view)
+export const REPORT_ROLES = [ROLES.SENIOR_DOCTOR];
 // All roles for appointments
 export const ALL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR, ROLES.SECRETARY, ROLES.STAFF];
 

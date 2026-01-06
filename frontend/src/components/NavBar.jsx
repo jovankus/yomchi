@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useClinic } from '../context/ClinicContext';
 import { usePharmacy } from '../context/PharmacyContext';
-import { hasAccess, ADMIN_ROLES, CLINICAL_ROLES, ALL_ROLES } from './RoleProtectedRoute';
+import { hasAccess, ADMIN_ROLES, CLINICAL_ROLES, REPORT_ROLES, ALL_ROLES } from './RoleProtectedRoute';
 import DropdownMenu, { DropdownLink } from './DropdownMenu';
 
 function PharmacySelector() {
@@ -53,6 +53,7 @@ export default function NavBar() {
 
     // Role checks
     const canViewPatients = hasAccess(userRole, CLINICAL_ROLES);
+    const canViewPatientReports = hasAccess(userRole, REPORT_ROLES);
     const canViewAccounting = hasAccess(userRole, ADMIN_ROLES);
     const canViewInventory = hasAccess(userRole, ADMIN_ROLES);
 
@@ -89,6 +90,11 @@ export default function NavBar() {
                             {/* Patients - Doctors only */}
                             {canViewPatients && (
                                 <NavLink to="/patients">👥 Patients</NavLink>
+                            )}
+
+                            {/* Patient Reports - Senior Doctor only (read-only view) */}
+                            {canViewPatientReports && (
+                                <NavLink to="/patient-reports">📋 Patient Reports</NavLink>
                             )}
 
                             {/* Appointments - All roles */}
@@ -183,6 +189,9 @@ export default function NavBar() {
 
                         {canViewPatients && (
                             <Link to="/patients" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>👥 Patients</Link>
+                        )}
+                        {canViewPatientReports && (
+                            <Link to="/patient-reports" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>📋 Patient Reports</Link>
                         )}
                         <Link to="/appointments" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>📅 Appointments</Link>
 

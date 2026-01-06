@@ -11,6 +11,8 @@ import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientForm from './pages/PatientForm';
 import PatientPrintView from './pages/PatientPrintView';
+import PatientReports from './pages/PatientReports';
+import PatientReportView from './pages/PatientReportView';
 import Appointments from './pages/Appointments';
 import TodayAppointments from './pages/TodayAppointments';
 import AppointmentForm from './pages/AppointmentForm';
@@ -26,7 +28,7 @@ import DailySummary from './pages/DailySummary';
 import MonthlyReport from './pages/MonthlyReport';
 import BackupSettings from './pages/BackupSettings';
 import ProtectedRoute from './components/ProtectedRoute';
-import RoleProtectedRoute, { ADMIN_ROLES, CLINICAL_ROLES, ALL_ROLES } from './components/RoleProtectedRoute';
+import RoleProtectedRoute, { ADMIN_ROLES, CLINICAL_ROLES, REPORT_ROLES, ALL_ROLES } from './components/RoleProtectedRoute';
 
 // Component that gates all routes behind clinic authentication
 function ClinicGate({ children }) {
@@ -89,6 +91,12 @@ function AppRoutes() {
                     <Route path="/patients/new" element={<AppShell><ErrorBoundary><PatientForm /></ErrorBoundary></AppShell>} />
                     <Route path="/patients/:id" element={<AppShell><ErrorBoundary><PatientForm /></ErrorBoundary></AppShell>} />
                     <Route path="/patients/:id/print" element={<PatientPrintView />} />
+                </Route>
+
+                {/* Patient Reports - Senior Doctor only (read-only view) */}
+                <Route element={<RoleProtectedRoute allowedRoles={REPORT_ROLES} />}>
+                    <Route path="/patient-reports" element={<AppShell><ErrorBoundary><PatientReports /></ErrorBoundary></AppShell>} />
+                    <Route path="/patient-reports/:id" element={<PatientReportView />} />
                 </Route>
 
                 {/* Accounting + Dashboard - Admin roles only */}
