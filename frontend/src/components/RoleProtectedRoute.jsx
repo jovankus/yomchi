@@ -20,8 +20,8 @@ export const ROLES = {
 
 // Admin roles - full access to accounting/inventory
 export const ADMIN_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN];
-// Clinical roles - can access patient data (excludes SENIOR_DOCTOR as they only see reports)
-export const CLINICAL_ROLES = [ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
+// Clinical roles - can access patient data (now includes SENIOR_DOCTOR for patient creation)
+export const CLINICAL_ROLES = [ROLES.SENIOR_DOCTOR, ROLES.PERMANENT_DOCTOR, ROLES.ADMIN, ROLES.DOCTOR];
 // Report roles - can access read-only patient reports (SENIOR_DOCTOR special view)
 export const REPORT_ROLES = [ROLES.SENIOR_DOCTOR];
 // All roles for appointments

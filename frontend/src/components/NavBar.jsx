@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useClinic } from '../context/ClinicContext';
 import { usePharmacy } from '../context/PharmacyContext';
@@ -46,6 +46,7 @@ export default function NavBar() {
     const { user, logout } = useAuth();
     const { clinic, logoutClinic } = useClinic();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
 
     if (!user) return null;
 
@@ -61,6 +62,7 @@ export default function NavBar() {
     const handleLogout = async () => {
         setIsMobileMenuOpen(false);
         await logout();
+        navigate('/login');
     };
 
     // Switch Clinic: clears BOTH sessions
@@ -68,6 +70,7 @@ export default function NavBar() {
         setIsMobileMenuOpen(false);
         await logout();
         await logoutClinic();
+        navigate('/clinic-login');
     };
 
     return (

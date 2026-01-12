@@ -6,6 +6,35 @@
 // Re-export API_BASE_URL for use by other API modules
 export { API_BASE_URL } from '../config';
 
+// Token storage keys (must match AuthContext.jsx)
+const EMPLOYEE_TOKEN_KEY = 'yomchi_employee_token';
+const CLINIC_TOKEN_KEY = 'yomchi_clinic_token';
+
+/**
+ * Get authentication headers for API calls.
+ * Retrieves JWT tokens from localStorage for mobile browser support.
+ * 
+ * @returns {Object} - Headers object with Authorization if token exists
+ */
+export const getAuthHeaders = () => {
+    const headers = {};
+
+    // Try employee token first (more specific)
+    const employeeToken = localStorage.getItem(EMPLOYEE_TOKEN_KEY);
+    if (employeeToken) {
+        headers['Authorization'] = `Bearer ${employeeToken}`;
+        return headers;
+    }
+
+    // Fall back to clinic token
+    const clinicToken = localStorage.getItem(CLINIC_TOKEN_KEY);
+    if (clinicToken) {
+        headers['Authorization'] = `Bearer ${clinicToken}`;
+    }
+
+    return headers;
+};
+
 /**
  * Safely convert any value to an array.
  * Prevents .map() errors on non-array data.
@@ -55,7 +84,8 @@ export const unwrapApi = async (promise) => {
 };
 
 /**
- * Safe fetch wrapper that returns standardized responses
+ * Safe fetch wrapper that returns standardized responses.
+ * Automatically includes authentication headers for JWT-based auth.
  * 
  * @param {string} url - The URL to fetch
  * @param {Object} options - Fetch options
@@ -67,6 +97,7 @@ export const safeFetch = async (url, options = {}) => {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeaders(),
                 ...options.headers
             },
             ...options

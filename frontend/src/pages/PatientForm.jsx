@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import { Input, TextArea } from '../components/Input';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 export default function PatientForm() {
     const { id } = useParams();
@@ -160,7 +160,10 @@ export default function PatientForm() {
 
     const fetchPsychiatricHistory = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/patients/${id}/psychiatric-profile`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients/${id}/psychiatric-profile`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (res.ok) {
                 const data = await res.json();
                 if (data.profile) {
@@ -490,7 +493,10 @@ export default function PatientForm() {
 
     const fetchPatient = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/patients/${id}`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients/${id}`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (res.ok) {
                 const data = await res.json();
                 setFormData(data.patient);
@@ -624,7 +630,10 @@ export default function PatientForm() {
         try {
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify(formData),
                 credentials: 'include'
             });
