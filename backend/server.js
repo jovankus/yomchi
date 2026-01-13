@@ -115,6 +115,49 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Admin endpoint to apply pending migrations (PostgreSQL only)
+app.post('/admin/migrate', async (req, res) => {
+  if (!isProduction) {
+    return res.status(400).json({ error: 'Migration endpoint only available in production' });
+  }
+
+  const alterMigrations = [
+    {
+      name: 'add_clinician_id_to_appointments',
+      sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS clinician_id INTEGER REFERENCES users(id)`
+    },
+    {
+      name: 'add_reference_type_to_financial_events',
+      sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_type TEXT`
+    },
+    {
+      name: 'add_reference_id_to_financial_events',
+      sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER`
+    }
+  ];
+
+  const results = [];
+
+  try {
+    for (const migration of alterMigrations) {
+      try {
+        await db.query(migration.sql);
+        results.push({ name: migration.name, status: 'applied' });
+      } catch (err) {
+        if (err.code === '42701') {
+          results.push({ name: migration.name, status: 'already_exists' });
+        } else {
+          results.push({ name: migration.name, status: 'error', error: err.message });
+        }
+      }
+    }
+
+    res.json({ success: true, migrations: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message, migrations: results });
+  }
+});
+
 // Example protected route
 app.get('/protected', requireAuth, (req, res) => {
   res.json({ message: 'This is protected data', user: req.session.username });
