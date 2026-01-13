@@ -303,6 +303,7 @@ router.get('/', requireAuth, (req, res) => {
     }
 
     // Build query with patient details including phone and date_of_birth
+    // Note: All authenticated users can see all appointments (role-based access, not per-user)
     let query = `
         SELECT a.*, 
                p.first_name as patient_first_name, 
@@ -312,10 +313,9 @@ router.get('/', requireAuth, (req, res) => {
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE substr(a.start_at, 1, 10) = ?
-        AND a.clinician_id = ?
     `;
 
-    let params = [date, req.session.userId];
+    let params = [date];
 
     // Add optional search filter (by patient name or phone)
     if (search && search.trim()) {
@@ -336,7 +336,8 @@ router.get('/', requireAuth, (req, res) => {
 // POST /appointments
 router.post('/', requireAuth, async (req, res) => {
     const { patient_id, start_at, end_at, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_cut_override, doctor_involved } = req.body;
-    const clinician_id = req.session.userId;
+    // Use roleId since this is a role-based system, not individual user accounts
+    const clinician_id = req.session.roleId || null;
 
     if (!patient_id || !start_at || !end_at) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -477,17 +478,15 @@ router.post('/', requireAuth, async (req, res) => {
 router.put('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_involved } = req.body;
-    const clinician_id = req.session.userId;
+    // Use roleId since this is a role-based system
+    const clinician_id = req.session.roleId || null;
 
-    // First check if appointment exists and belongs to user (or is editable)
+    // Check if appointment exists
     db.get('SELECT * FROM appointments WHERE id = ?', [id], async (err, appointment) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-        // Ensure user owns this appointment
-        if (appointment.clinician_id !== clinician_id) {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
+        // Role-based access: all authenticated users can edit appointments (no ownership check)
 
         const newStart = start_at || appointment.start_at;
         const newEnd = end_at || appointment.end_at;
@@ -619,15 +618,12 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /appointments/:id
 router.delete('/:id', requireAuth, (req, res) => {
     const { id } = req.params;
-    const clinician_id = req.session.userId;
 
     db.get('SELECT * FROM appointments WHERE id = ?', [id], (err, appointment) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-        if (appointment.clinician_id !== clinician_id) {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
+        // Role-based access: all authenticated users can delete appointments
 
         db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
             if (err) return res.status(500).json({ error: err.message });
@@ -656,17 +652,13 @@ router.get('/:id/income', requireAuth, (req, res) => {
 router.patch('/:id/payment', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_cut_override, doctor_involved } = req.body;
-    const clinician_id = req.session.userId;
 
     // Fetch existing appointment
     db.get('SELECT * FROM appointments WHERE id = ?', [id], async (err, appointment) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-        // Ensure user owns this appointment
-        if (appointment.clinician_id !== clinician_id) {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
+        // Role-based access: all authenticated users can update payment status
 
         // Determine new values (use provided or keep existing)
         const newSessionType = session_type || appointment.session_type;
