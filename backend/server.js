@@ -121,6 +121,11 @@ app.post('/admin/migrate', async (req, res) => {
     return res.status(400).json({ error: 'Migration endpoint only available in production' });
   }
 
+  // Check if db.pool exists (PostgreSQL mode)
+  if (!db.pool) {
+    return res.status(500).json({ error: 'Database pool not available' });
+  }
+
   const alterMigrations = [
     {
       name: 'add_clinician_id_to_appointments',
@@ -141,20 +146,20 @@ app.post('/admin/migrate', async (req, res) => {
   try {
     for (const migration of alterMigrations) {
       try {
-        await db.query(migration.sql);
+        await db.pool.query(migration.sql);
         results.push({ name: migration.name, status: 'applied' });
       } catch (err) {
         if (err.code === '42701') {
           results.push({ name: migration.name, status: 'already_exists' });
         } else {
-          results.push({ name: migration.name, status: 'error', error: err.message });
+          results.push({ name: migration.name, status: 'error', error: err.message, code: err.code });
         }
       }
     }
 
-    res.json({ success: true, migrations: results });
+    res.json({ success: true, migrations: results, timestamp: new Date().toISOString() });
   } catch (err) {
-    res.status(500).json({ error: err.message, migrations: results });
+    res.status(500).json({ error: err.message, stack: err.stack, migrations: results });
   }
 });
 
