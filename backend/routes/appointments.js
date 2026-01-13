@@ -408,12 +408,13 @@ router.post('/', requireAuth, async (req, res) => {
             }
         }
 
-        const stmt = db.prepare(`
+        const insertSql = `
             INSERT INTO appointments (patient_id, clinician_id, start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_involved)
             VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?)
-        `);
+        `;
+        const params = [patient_id, clinician_id, start_at, end_at, session_type, payment_status, free_return_reason || null, finalDoctorCutPercent, doctor_involved !== undefined ? (doctor_involved ? 1 : 0) : 1];
 
-        stmt.run(patient_id, clinician_id, start_at, end_at, session_type, payment_status, free_return_reason || null, finalDoctorCutPercent, doctor_involved !== undefined ? (doctor_involved ? 1 : 0) : 1, async function (err) {
+        db.run(insertSql, params, async function (err) {
             if (err) return res.status(500).json({ error: err.message });
 
             const appointmentId = this.lastID;
@@ -466,7 +467,6 @@ router.post('/', requireAuth, async (req, res) => {
                 res.status(201).json(createdAppointment);
             }
         });
-        stmt.finalize();
 
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -29,11 +29,12 @@ router.get('/balance', requireAuth, requireRole(ADMIN_ROLES), async (req, res) =
 
     try {
         // Get total doctor cuts owed (from financial_events)
+        // Using substr for cross-database compatibility (dates stored as ISO text)
         const owedQuery = month
             ? `SELECT COALESCE(SUM(amount), 0) as total_owed 
                FROM financial_events 
                WHERE category = 'DOCTOR_CUT' 
-               AND strftime('%Y-%m', event_date) = ?`
+               AND substr(event_date, 1, 7) = ?`
             : `SELECT COALESCE(SUM(amount), 0) as total_owed 
                FROM financial_events 
                WHERE category = 'DOCTOR_CUT'`;
@@ -49,7 +50,7 @@ router.get('/balance', requireAuth, requireRole(ADMIN_ROLES), async (req, res) =
         const paidQuery = month
             ? `SELECT COALESCE(SUM(amount), 0) as total_paid 
                FROM doctor_payouts 
-               WHERE strftime('%Y-%m', payout_date) = ?`
+               WHERE substr(payout_date, 1, 7) = ?`
             : `SELECT COALESCE(SUM(amount), 0) as total_paid 
                FROM doctor_payouts`;
 

@@ -65,9 +65,9 @@ router.put('/:patientId/final-reports/:id', requireRole(REPORT_ROLES), (req, res
 
     db.run(
         `UPDATE final_reports 
-         SET diagnosis = ?, treatment_plan = ?, summary = ?, recommendations = ?, updated_at = datetime('now')
+         SET diagnosis = ?, treatment_plan = ?, summary = ?, recommendations = ?, updated_at = ?
          WHERE id = ? AND patient_id = ?`,
-        [diagnosis, treatment_plan, summary, recommendations, id, patientId],
+        [diagnosis, treatment_plan, summary, recommendations, new Date().toISOString(), id, patientId],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
             if (this.changes === 0) return res.status(404).json({ message: 'Report not found' });

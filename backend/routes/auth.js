@@ -186,8 +186,8 @@ router.post('/device-login', async (req, res) => {
 
             // Update last_used_at
             db.run(
-                `UPDATE device_sessions SET last_used_at = datetime('now') WHERE id = ?`,
-                [session.id]
+                `UPDATE device_sessions SET last_used_at = ? WHERE id = ?`,
+                [new Date().toISOString(), session.id]
             );
 
             // Set session
@@ -232,8 +232,8 @@ router.post('/revoke-device', (req, res) => {
     }
 
     db.run(
-        `UPDATE device_sessions SET revoked_at = datetime('now') WHERE id = ? AND clinic_id = ?`,
-        [deviceSessionId, req.session.clinic_id],
+        `UPDATE device_sessions SET revoked_at = ? WHERE id = ? AND clinic_id = ?`,
+        [new Date().toISOString(), deviceSessionId, req.session.clinic_id],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
             if (this.changes === 0) return res.status(404).json({ message: 'Device session not found' });
