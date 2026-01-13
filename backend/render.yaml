@@ -5,7 +5,7 @@ services:
   - type: web
     name: yomchi-api
     env: node
-    buildCommand: npm install
+    buildCommand: npm install && npm run migrate:pg
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
