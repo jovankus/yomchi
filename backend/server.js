@@ -168,7 +168,39 @@ app.get('/protected', requireAuth, (req, res) => {
   res.json({ message: 'This is protected data', user: req.session.username });
 });
 
-app.listen(port, () => {
+// Auto-run migrations on startup for PostgreSQL
+async function runStartupMigrations() {
+  if (!isProduction || !db.pool) {
+    console.log('Skipping migrations (not in production or no pool)');
+    return;
+  }
+
+  const alterMigrations = [
+    { name: 'add_clinician_id', sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS clinician_id INTEGER REFERENCES users(id)` },
+    { name: 'add_reference_type', sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_type TEXT` },
+    { name: 'add_reference_id', sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER` }
+  ];
+
+  console.log('Running startup migrations...');
+  for (const m of alterMigrations) {
+    try {
+      await db.pool.query(m.sql);
+      console.log(`✓ Migration applied: ${m.name}`);
+    } catch (err) {
+      if (err.code === '42701') {
+        console.log(`- Already exists: ${m.name}`);
+      } else {
+        console.error(`✗ Migration error (${m.name}):`, err.message);
+      }
+    }
+  }
+  console.log('Startup migrations completed.');
+}
+
+app.listen(port, async () => {
   console.log(`Yomchi Healthcare backend running on http://localhost:${port}`);
   console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+
+  // Run migrations after server starts
+  await runStartupMigrations();
 });
