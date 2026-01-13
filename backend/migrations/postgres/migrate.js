@@ -53,6 +53,7 @@ const migrations = [
     `CREATE TABLE IF NOT EXISTS appointments (
         id SERIAL PRIMARY KEY,
         patient_id INTEGER REFERENCES patients(id),
+        clinician_id INTEGER REFERENCES users(id),
         start_at TEXT NOT NULL,
         end_at TEXT,
         status TEXT DEFAULT 'SCHEDULED',
@@ -86,6 +87,8 @@ const migrations = [
         category TEXT,
         description TEXT,
         related_appointment_id INTEGER REFERENCES appointments(id),
+        reference_type TEXT,
+        reference_id INTEGER,
         event_date TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -307,10 +310,30 @@ const migrations = [
     )`
 ];
 
+// Alter table migrations for fixing existing tables
+const alterMigrations = [
+    // Add clinician_id to appointments if it doesn't exist
+    {
+        name: 'add_clinician_id_to_appointments',
+        sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS clinician_id INTEGER REFERENCES users(id)`
+    },
+    // Add reference_type to financial_events if it doesn't exist
+    {
+        name: 'add_reference_type_to_financial_events',
+        sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_type TEXT`
+    },
+    // Add reference_id to financial_events if it doesn't exist
+    {
+        name: 'add_reference_id_to_financial_events',
+        sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER`
+    }
+];
+
 async function runMigrations() {
     console.log('Running PostgreSQL migrations...\n');
 
     try {
+        // Create tables
         for (let i = 0; i < migrations.length; i++) {
             const sql = migrations[i];
             const tableName = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)?.[1] || `migration_${i}`;
@@ -328,6 +351,22 @@ async function runMigrations() {
             }
         }
 
+        // Run alter migrations
+        console.log('\nRunning schema alterations...');
+        for (const alter of alterMigrations) {
+            try {
+                await pool.query(alter.sql);
+                console.log(`✓ Applied: ${alter.name}`);
+            } catch (err) {
+                if (err.code === '42701') {
+                    // Column already exists
+                    console.log(`- Already applied: ${alter.name}`);
+                } else {
+                    console.error(`✗ Error in ${alter.name}:`, err.message);
+                }
+            }
+        }
+
         console.log('\n✓ PostgreSQL migrations completed successfully!');
     } catch (err) {
         console.error('Migration error:', err);
@@ -337,3 +376,4 @@ async function runMigrations() {
 }
 
 runMigrations();
+
