@@ -401,10 +401,13 @@ router.post('/', requireAuth, async (req, res) => {
             if (doctor_cut_override && doctor_cut_percent) {
                 // Use manually specified override
                 finalDoctorCutPercent = doctor_cut_percent;
+                console.log(`[DOCTOR CUT] Using override: ${finalDoctorCutPercent}%`);
             } else {
                 // Auto-compute based on patient's paid visit count
                 const paidVisitCount = await getPatientPaidVisitCount(patient_id);
+                console.log(`[DOCTOR CUT] Patient ${patient_id} has ${paidVisitCount} prior PAID visits`);
                 finalDoctorCutPercent = computeDoctorCutPercent(paidVisitCount);
+                console.log(`[DOCTOR CUT] Computed cut: ${finalDoctorCutPercent}% (first visit = 20%, subsequent = 10%)`);
                 isAutoComputed = true;
             }
         }
