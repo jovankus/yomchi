@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import axios from '../api/axiosConfig';
 import { API_BASE_URL } from '../config';
 
 export default function MonthlyReport() {
@@ -210,8 +210,8 @@ export default function MonthlyReport() {
                                             <td className="px-4 py-2">{session.patient_name}</td>
                                             <td className="px-4 py-2">
                                                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${session.session_type === 'IN_CLINIC'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-purple-100 text-purple-800'
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : 'bg-purple-100 text-purple-800'
                                                     }`}>
                                                     {session.session_type === 'IN_CLINIC' ? '🏥 In-Clinic' : '💻 Online'}
                                                 </span>

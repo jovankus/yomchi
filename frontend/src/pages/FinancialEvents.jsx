@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axiosConfig';
 import { API_BASE_URL } from '../config';
 
 export default function FinancialEvents() {
@@ -158,8 +158,8 @@ export default function FinancialEvents() {
                                     <td className="px-4 py-3 text-sm">{event.event_date}</td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${event.event_type === 'INCOME'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-red-100 text-red-800'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
                                             }`}>
                                             {event.event_type}
                                         </span>

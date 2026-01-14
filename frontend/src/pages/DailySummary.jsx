@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import axios from '../api/axiosConfig';
+import { API_BASE_URL } from '../api/apiUtils';
 
 export default function DailySummary() {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
