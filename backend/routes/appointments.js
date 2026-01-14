@@ -118,8 +118,15 @@ const getPatientPaidVisitCount = (patient_id, excludeAppointmentId = null) => {
         }
 
         db.get(query, params, (err, row) => {
-            if (err) reject(err);
-            else resolve(row.count);
+            if (err) {
+                reject(err);
+            } else {
+                // PostgreSQL returns count as string/bigint, SQLite as number
+                // Convert to number to ensure consistent behavior
+                const count = parseInt(row.count, 10) || 0;
+                console.log(`[getPatientPaidVisitCount] Patient ${patient_id}: raw count = ${row.count} (${typeof row.count}), parsed = ${count}`);
+                resolve(count);
+            }
         });
     });
 };
