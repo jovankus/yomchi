@@ -54,10 +54,20 @@ export default function Patients() {
         }
     };
 
-    // Format phone for WhatsApp (remove non-digits)
+    // Format phone for WhatsApp with Iraq country code
     const formatPhoneForWhatsApp = (phone) => {
         if (!phone) return null;
-        return phone.replace(/\D/g, '');
+        // Remove all non-digit characters
+        let cleaned = phone.replace(/\D/g, '');
+        // If starts with 0, replace with Iraq country code 964
+        if (cleaned.startsWith('0')) {
+            cleaned = '964' + cleaned.slice(1);
+        }
+        // If doesn't start with country code, add it
+        if (!cleaned.startsWith('964')) {
+            cleaned = '964' + cleaned;
+        }
+        return cleaned;
     };
 
     return (

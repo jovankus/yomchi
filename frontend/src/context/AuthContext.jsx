@@ -70,6 +70,10 @@ export const AuthProvider = ({ children }) => {
             }
 
             setUser(data.user);
+
+            // Brief delay to ensure token is stored before navigation
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             return { success: true };
         } else {
             const data = await res.json();
