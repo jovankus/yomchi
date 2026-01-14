@@ -127,7 +127,10 @@ const getPatientPaidVisitCount = (patient_id, excludeAppointmentId = null) => {
 // Helper to compute doctor cut percent based on paid visit count
 // Rule: First paid visit = 20%, subsequent visits = 10%
 const computeDoctorCutPercent = (paidVisitCount) => {
-    return paidVisitCount === 0 ? 20 : 10;
+    // Convert to number to handle SQLite returning string or number
+    const count = parseInt(paidVisitCount, 10) || 0;
+    console.log(`[DOCTOR CUT] computeDoctorCutPercent called with raw=${paidVisitCount}, parsed=${count}, result=${count === 0 ? 20 : 10}%`);
+    return count === 0 ? 20 : 10;
 };
 
 // Helper to check if income event already exists for an appointment
@@ -628,9 +631,20 @@ router.delete('/:id', requireAuth, (req, res) => {
 
         // Role-based access: all authenticated users can delete appointments
 
-        db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Appointment deleted successfully' });
+        // First delete related financial events (income and doctor cut)
+        db.run('DELETE FROM financial_events WHERE reference_type = ? AND reference_id = ?', ['APPOINTMENT', id], function (feErr) {
+            if (feErr) {
+                console.error('Error deleting financial events:', feErr);
+                // Continue with appointment deletion even if this fails
+            } else {
+                console.log(`[DELETE] Removed ${this.changes} financial events for appointment ${id}`);
+            }
+
+            // Then delete the appointment
+            db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'Appointment and related financial events deleted successfully' });
+            });
         });
     });
 });
