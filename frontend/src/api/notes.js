@@ -1,11 +1,14 @@
-import { API_BASE_URL } from './apiUtils';
+import { API_BASE_URL, getAuthHeaders } from './apiUtils';
 
 const API_URL = `${API_BASE_URL}/notes`;
 
 export const createNote = async (data) => {
     const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+        },
         body: JSON.stringify(data),
         credentials: 'include'
     });
@@ -18,7 +21,8 @@ export const createNote = async (data) => {
 
 export const getPatientNotes = async (patientId) => {
     const res = await fetch(`${API_BASE_URL}/patients/${patientId}/notes`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error('Failed to fetch notes');
     return res.json();

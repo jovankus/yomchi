@@ -181,7 +181,10 @@ export default function PatientForm() {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/psychiatric-profile`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify({ psychiatric_history_text: psychiatricHistory }),
                 credentials: 'include'
             });
@@ -202,7 +205,7 @@ export default function PatientForm() {
 
     const fetchSymptoms = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/patients/${id}/symptoms`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients/${id}/symptoms`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 if (data.symptoms) {
@@ -237,7 +240,10 @@ export default function PatientForm() {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/symptoms`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify(symptoms),
                 credentials: 'include'
             });
@@ -266,7 +272,7 @@ export default function PatientForm() {
     const fetchPrescriptions = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/documents?doc_type=PRESCRIPTION`,
-                { credentials: 'include' });
+                { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setPrescriptions(data.documents || []);
@@ -300,6 +306,7 @@ export default function PatientForm() {
 
             const res = await fetch(`${API_BASE_URL}/patients/${id}/documents`, {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData,
                 credentials: 'include'
             });
@@ -327,7 +334,7 @@ export default function PatientForm() {
     const fetchRecentAppointments = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/recent-appointments`,
-                { credentials: 'include' });
+                { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setRecentAppointments(data.appointments || []);
@@ -382,7 +389,7 @@ export default function PatientForm() {
     const fetchAsdProfile = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/asd-profile`,
-                { credentials: 'include' });
+                { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 if (data.asd_profile) {
@@ -407,7 +414,10 @@ export default function PatientForm() {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/asd-profile`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify(asdProfile),
                 credentials: 'include'
             });
@@ -429,7 +439,7 @@ export default function PatientForm() {
     const fetchAsdForms = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}/asd-forms`,
-                { credentials: 'include' });
+                { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setSavedAsdForms(data.forms || []);

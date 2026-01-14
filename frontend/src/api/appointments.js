@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './apiUtils';
+import { API_BASE_URL, getAuthHeaders } from './apiUtils';
 
 const API_URL = `${API_BASE_URL}/appointments`;
 
@@ -8,7 +8,8 @@ export const getAppointments = async (date, search = '') => {
         url += `&search=${encodeURIComponent(search.trim())}`;
     }
     const res = await fetch(url, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error('Failed to fetch appointments');
     return res.json();
@@ -17,7 +18,10 @@ export const getAppointments = async (date, search = '') => {
 export const createAppointment = async (data) => {
     const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+        },
         body: JSON.stringify(data),
         credentials: 'include'
     });
@@ -33,7 +37,10 @@ export const createAppointment = async (data) => {
 export const updateAppointment = async (id, data) => {
     const res = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+        },
         body: JSON.stringify(data),
         credentials: 'include'
     });
@@ -48,7 +55,8 @@ export const updateAppointment = async (id, data) => {
 export const deleteAppointment = async (id) => {
     const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error('Failed to delete appointment');
     return res.json();

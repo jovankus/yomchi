@@ -1,4 +1,7 @@
 // Role-based access control middleware for Yomchi Healthcare
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.SESSION_SECRET || 'your_secret_key';
 
 const ROLES = {
     SENIOR_DOCTOR: 'SENIOR_DOCTOR',
@@ -15,8 +18,43 @@ const ROLE_LEVELS = {
     SECRETARY: 1
 };
 
+// Helper to extract JWT from Authorization header and populate session
+const extractJwtToSession = (req) => {
+    // If session already has role info, skip JWT extraction
+    if (req.session && (req.session.role || req.session.roleId || req.session.employeeId)) {
+        return;
+    }
+
+    // Try to extract JWT from Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            const token = authHeader.substring(7);
+            const decoded = jwt.verify(token, JWT_SECRET);
+
+            if (decoded.type === 'employee') {
+                // Populate session with JWT data for mobile browsers
+                req.session.roleId = decoded.role_id;
+                req.session.role = decoded.role;
+                req.session.clinic_id = decoded.clinic_id;
+                req.session.clinic_name = decoded.clinic_name;
+            } else if (decoded.type === 'clinic') {
+                // Clinic-only token
+                req.session.clinic_id = decoded.clinic_id;
+                req.session.clinic_name = decoded.clinic_name;
+            }
+        } catch (err) {
+            // Invalid token - leave session as-is
+            console.log('JWT extraction failed:', err.message);
+        }
+    }
+};
+
 // Check if employee is authenticated (works with both old and new session structure)
 const requireAuth = (req, res, next) => {
+    // First try to extract JWT to session (for mobile browsers)
+    extractJwtToSession(req);
+
     // Check for role-based auth (new) or employeeId (legacy)
     if (req.session && (req.session.role || req.session.roleId || req.session.employeeId)) {
         next();
@@ -27,6 +65,9 @@ const requireAuth = (req, res, next) => {
 
 // Check if clinic is authenticated
 const requireClinic = (req, res, next) => {
+    // First try to extract JWT to session (for mobile browsers)
+    extractJwtToSession(req);
+
     if (req.session && req.session.clinic_id) {
         next();
     } else {
@@ -37,6 +78,9 @@ const requireClinic = (req, res, next) => {
 // Require specific roles (accepts array of allowed roles)
 const requireRole = (allowedRoles) => {
     return (req, res, next) => {
+        // First try to extract JWT to session (for mobile browsers)
+        extractJwtToSession(req);
+
         // Check for authentication
         if (!req.session || (!req.session.role && !req.session.employeeId)) {
             return res.status(401).json({ message: 'Unauthorized - Login required' });
@@ -80,6 +124,7 @@ module.exports = {
     requireAuth,
     requireClinic,
     requireRole,
+    extractJwtToSession,
     ROLES,
     ROLE_LEVELS,
     ADMIN_ROLES,

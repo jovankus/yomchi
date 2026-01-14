@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 import Button from '../components/Button';
 
 export default function PatientReports() {
@@ -15,7 +15,7 @@ export default function PatientReports() {
 
     const fetchPatients = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setPatients(data.patients || data || []);

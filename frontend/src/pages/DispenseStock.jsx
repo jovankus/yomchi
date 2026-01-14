@@ -5,7 +5,7 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import { Input } from '../components/Input';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 const DispenseStock = () => {
     const { selectedPharmacyId, pharmacies } = usePharmacy();
@@ -45,7 +45,7 @@ const DispenseStock = () => {
         setPatientsLoading(true);
         setPatientsError('');
         try {
-            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 const patientsArray = Array.isArray(data) ? data : (data.patients || []);
@@ -64,7 +64,7 @@ const DispenseStock = () => {
     const fetchItems = async () => {
         setItemsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/inventory/items`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/inventory/items`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setItems(data);
@@ -103,7 +103,10 @@ const DispenseStock = () => {
 
             const res = await fetch(`${API_BASE_URL}/inventory/dispense`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 credentials: 'include',
                 body: JSON.stringify(payload)
             });

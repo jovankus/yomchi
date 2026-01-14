@@ -4,7 +4,7 @@ import PageTitle from '../components/PageTitle';
 import { Input } from '../components/Input';
 import Button from '../components/Button';
 import Table, { TableHead, TableBody, TableRow, TableHeader, TableCell } from '../components/Table';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 export default function Patients() {
     const [patients, setPatients] = useState([]);
@@ -18,7 +18,7 @@ export default function Patients() {
     const fetchPatients = async () => {
         try {
             const query = search ? `?search=${encodeURIComponent(search)}` : '';
-            const res = await fetch(`${API_BASE_URL}/patients${query}`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients${query}`, { credentials: 'include', headers: getAuthHeaders() });
             const data = await res.json();
             if (res.ok) {
                 setPatients(data.patients);
@@ -35,7 +35,8 @@ export default function Patients() {
         try {
             const res = await fetch(`${API_BASE_URL}/patients/${id}`, {
                 method: 'DELETE',
-                credentials: 'include'
+                credentials: 'include',
+                headers: getAuthHeaders()
             });
             if (res.ok) {
                 fetchPatients();

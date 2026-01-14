@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import { Input } from '../components/Input';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 export default function AppointmentForm() {
     const { id } = useParams();
@@ -35,7 +35,7 @@ export default function AppointmentForm() {
 
     useEffect(() => {
         if (isEditMode) {
-            fetch(`${API_BASE_URL}/appointments/${id}`, { credentials: 'include' })
+            fetch(`${API_BASE_URL}/appointments/${id}`, { credentials: 'include', headers: getAuthHeaders() })
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to fetch appointment');
                     return res.json();
@@ -58,7 +58,7 @@ export default function AppointmentForm() {
 
     const fetchPatients = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setPatients(data.patients || []);

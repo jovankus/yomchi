@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import { Input } from '../components/Input';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 export default function Appointments() {
     const navigate = useNavigate();
@@ -61,7 +61,10 @@ export default function Appointments() {
         try {
             const res = await fetch(`${API_BASE_URL}/appointments/${appt.id}/payment`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify({ payment_status: 'PAID' }),
                 credentials: 'include'
             });
@@ -229,9 +232,9 @@ export default function Appointments() {
                                         </span>
                                         {/* Status Badge */}
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${appt.status === 'scheduled' ? 'bg-slate-100 text-slate-700' :
-                                                appt.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                                    appt.status === 'cancelled' ? 'bg-red-50 text-red-700' :
-                                                        'bg-slate-100 text-slate-700'
+                                            appt.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                                appt.status === 'cancelled' ? 'bg-red-50 text-red-700' :
+                                                    'bg-slate-100 text-slate-700'
                                             }`}>
                                             {appt.status?.toUpperCase() || 'SCHEDULED'}
                                         </span>

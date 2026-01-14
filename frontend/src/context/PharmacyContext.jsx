@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 const PharmacyContext = createContext();
 
@@ -16,7 +16,7 @@ export function PharmacyProvider({ children }) {
 
     const fetchPharmacies = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/pharmacies`, { credentials: 'include' });
+            const res = await fetch(`${API_BASE_URL}/pharmacies`, { credentials: 'include', headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setPharmacies(data);

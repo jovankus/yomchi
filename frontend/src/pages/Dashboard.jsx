@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 
 function StatCard({ title, value, icon, color, link }) {
     const colorClasses = {
@@ -42,7 +42,7 @@ export default function Dashboard() {
 
         try {
             // Fetch today's appointments
-            const apptRes = await fetch(`${API_BASE_URL}/appointments?date=${today}`, { credentials: 'include' });
+            const apptRes = await fetch(`${API_BASE_URL}/appointments?date=${today}`, { credentials: 'include', headers: getAuthHeaders() });
             if (apptRes.ok) {
                 const appointments = await apptRes.json();
                 const paid = appointments.filter(a => a.payment_status === 'PAID').length;
@@ -57,7 +57,7 @@ export default function Dashboard() {
             }
 
             // Fetch today's income
-            const dailyRes = await fetch(`${API_BASE_URL}/financial-events/daily-summary?date=${today}`, { credentials: 'include' });
+            const dailyRes = await fetch(`${API_BASE_URL}/financial-events/daily-summary?date=${today}`, { credentials: 'include', headers: getAuthHeaders() });
             if (dailyRes.ok) {
                 const summary = await dailyRes.json();
                 setStats(prev => ({
@@ -67,7 +67,7 @@ export default function Dashboard() {
             }
 
             // Fetch inventory alerts
-            const alertsRes = await fetch(`${API_BASE_URL}/inventory/alerts?threshold=30`, { credentials: 'include' });
+            const alertsRes = await fetch(`${API_BASE_URL}/inventory/alerts?threshold=30`, { credentials: 'include', headers: getAuthHeaders() });
             if (alertsRes.ok) {
                 const alerts = await alertsRes.json();
                 setStats(prev => ({
@@ -77,7 +77,7 @@ export default function Dashboard() {
             }
 
             // Fetch patients count
-            const patientsRes = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
+            const patientsRes = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include', headers: getAuthHeaders() });
             if (patientsRes.ok) {
                 const data = await patientsRes.json();
                 setStats(prev => ({
