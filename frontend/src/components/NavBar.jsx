@@ -137,9 +137,9 @@ export default function NavBar() {
 
                         <div className="flex items-center gap-3">
                             <div className="text-sm text-right">
-                                <div className="font-medium text-slate-900">{user.username}</div>
+                                <div className="font-medium text-slate-900">{user?.username || 'User'}</div>
                                 <div className="text-slate-500 text-xs px-2 py-0.5 bg-slate-100 rounded-full inline-block">
-                                    {user.role.replace('_', ' ')}
+                                    {user?.role?.replace('_', ' ') || 'Unknown'}
                                 </div>
                             </div>
 
@@ -197,11 +197,11 @@ export default function NavBar() {
                 <div className="p-4 bg-slate-50 border-b border-slate-200">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">
-                            {user.username.charAt(0).toUpperCase()}
+                            {user?.username?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                         <div className="overflow-hidden">
-                            <div className="font-bold text-slate-900 truncate">{user.username}</div>
-                            <div className="text-xs text-slate-500 capitalize">{user.role.replace('_', ' ')}</div>
+                            <div className="font-bold text-slate-900 truncate">{user?.username || 'User'}</div>
+                            <div className="text-xs text-slate-500 capitalize">{user?.role?.replace('_', ' ') || 'Unknown'}</div>
                         </div>
                     </div>
                     {clinic && (
