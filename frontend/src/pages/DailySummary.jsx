@@ -116,7 +116,7 @@ export default function DailySummary() {
             <h1 className="text-2xl font-bold mb-6">📊 Daily Accounting Ledger</h1>
 
             {/* Date Selector & Controls */}
-            <div className="bg-white p-4 rounded-lg shadow mb-6 flex gap-4 items-end flex-wrap">
+            <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-4 sm:items-end">
                 <div className="flex-1 min-w-[200px]">
                     <label className="block text-sm font-medium mb-1">Select Date</label>
                     <input

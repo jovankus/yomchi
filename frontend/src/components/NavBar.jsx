@@ -181,57 +181,92 @@ export default function NavBar() {
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu Drawer */}
+            {/* Backdrop */}
             {isMobileMenuOpen && (
-                <div className="md:hidden bg-white border-t border-slate-200 absolute w-full shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
-                    <div className="px-4 py-3 space-y-1">
-                        <div className="pb-3 mb-3 border-b border-slate-100">
-                            <div className="font-medium text-slate-900">{user.username}</div>
-                            <div className="text-sm text-slate-500">{clinic?.name}</div>
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            {/* Side Drawer */}
+            <div className={`fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 transform transition-transform duration-300 md:hidden flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}>
+                {/* Drawer Header */}
+                <div className="p-4 bg-slate-50 border-b border-slate-200">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">
+                            {user.username.charAt(0).toUpperCase()}
                         </div>
-
-                        {canViewPatients && (
-                            <Link to="/patients" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>👥 Patients</Link>
-                        )}
-                        {canViewPatientReports && (
-                            <Link to="/patient-reports" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>📋 Patient Reports</Link>
-                        )}
-                        <Link to="/appointments" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>📅 Appointments</Link>
-
-                        {canViewAccounting && (
-                            <div className="space-y-1 pt-2">
-                                <div className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Accounting</div>
-                                <Link to="/daily-summary" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Daily Ledger</Link>
-                                <Link to="/monthly-report" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Monthly Report</Link>
-                                <Link to="/financial-events" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>All Events</Link>
-                                <Link to="/backup-settings" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Backup</Link>
-                            </div>
-                        )}
-
-                        {canViewInventory && (
-                            <div className="space-y-1 pt-2">
-                                <div className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Inventory</div>
-                                <Link to="/inventory-items" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Items Catalog</Link>
-                                <Link to="/inventory-batches" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Stock & Batches</Link>
-                                <Link to="/inventory-dispense" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Dispense</Link>
-                                <Link to="/inventory-movements" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Movement Log</Link>
-                                <Link to="/suppliers" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Suppliers</Link>
-                                <Link to="/pharmacies" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Pharmacies</Link>
-                                <Link to="/inventory-alerts" className="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50" onClick={() => setIsMobileMenuOpen(false)}>Alerts & Expiry</Link>
-                            </div>
-                        )}
-
-                        <div className="pt-4 pb-2 border-t border-slate-100 mt-2">
-                            <button onClick={handleLogout} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:bg-slate-50">
-                                Logout
-                            </button>
-                            <button onClick={handleSwitchClinic} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
-                                Switch Clinic
-                            </button>
+                        <div className="overflow-hidden">
+                            <div className="font-bold text-slate-900 truncate">{user.username}</div>
+                            <div className="text-xs text-slate-500 capitalize">{user.role.replace('_', ' ')}</div>
                         </div>
                     </div>
+                    {clinic && (
+                        <div className="px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium text-center shadow-sm">
+                            🏥 {clinic.name}
+                        </div>
+                    )}
                 </div>
-            )}
+
+                {/* Drawer Links - Scrollable */}
+                <div className="flex-1 overflow-y-auto py-2 px-3 space-y-1">
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3 mt-2">Menu</div>
+
+                    <Link to="/appointments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 hover:text-primary-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                        <span>📅</span> Appointments
+                    </Link>
+
+                    {canViewPatients && (
+                        <Link to="/patients" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 hover:text-primary-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                            <span>👥</span> Patients
+                        </Link>
+                    )}
+
+                    {canViewPatientReports && (
+                        <Link to="/patient-reports" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 hover:text-primary-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                            <span>📋</span> Patient Reports
+                        </Link>
+                    )}
+
+                    {canViewAccounting && (
+                        <>
+                            <div className="my-2 border-t border-slate-100" />
+                            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3 mt-2">Accounting</div>
+                            <Link to="/daily-summary" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Daily Ledger</Link>
+                            <Link to="/monthly-report" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Monthly Report</Link>
+                            <Link to="/financial-events" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>All Events</Link>
+                            <Link to="/backup-settings" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Backup</Link>
+                        </>
+                    )}
+
+                    {canViewInventory && (
+                        <>
+                            <div className="my-2 border-t border-slate-100" />
+                            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3 mt-2">Inventory</div>
+                            <Link to="/inventory-items" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Items Catalog</Link>
+                            <Link to="/inventory-batches" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Stock & Batches</Link>
+                            <Link to="/inventory-dispense" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Dispense</Link>
+                            <Link to="/inventory-movements" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Movement Log</Link>
+                            <Link to="/suppliers" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Suppliers</Link>
+                            <Link to="/pharmacies" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Pharmacies</Link>
+                            <Link to="/inventory-alerts" className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 ml-2" onClick={() => setIsMobileMenuOpen(false)}>Alerts & Expiry</Link>
+                        </>
+                    )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="p-4 border-t border-slate-200 space-y-2 bg-slate-50">
+                    <button onClick={handleSwitchClinic} className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors">
+                        🏥 Switch Clinic
+                    </button>
+                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
         </nav>
     );
 }

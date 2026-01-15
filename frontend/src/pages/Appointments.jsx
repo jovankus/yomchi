@@ -133,15 +133,15 @@ export default function Appointments() {
             />
 
             <Card className="mb-6">
-                <div className="flex flex-wrap items-end gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                     <Input
                         type="date"
                         label="Select Date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="max-w-xs"
+                        className="w-full sm:max-w-xs"
                     />
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 w-full sm:min-w-[200px]">
                         <Input
                             type="text"
                             label="Search Patient"

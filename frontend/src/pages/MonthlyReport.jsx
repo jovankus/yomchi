@@ -88,7 +88,7 @@ export default function MonthlyReport() {
             <h1 className="text-2xl font-bold mb-6">📈 Monthly Accounting Report</h1>
 
             {/* Period Selector */}
-            <div className="bg-white p-4 rounded-lg shadow mb-6 flex gap-4 items-end flex-wrap">
+            <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-4 sm:items-end">
                 <div className="flex-1 min-w-[150px]">
                     <label className="block text-sm font-medium mb-1">Month</label>
                     <select
@@ -193,35 +193,37 @@ export default function MonthlyReport() {
                     {/* Session Details Table */}
                     {showDoctorCutsDetails && doctorCuts.sessions.length > 0 && (
                         <div className="bg-white rounded-lg overflow-hidden border">
-                            <table className="w-full text-sm">
-                                <thead className="bg-teal-100">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left font-semibold text-teal-800">Date</th>
-                                        <th className="px-4 py-2 text-left font-semibold text-teal-800">Patient</th>
-                                        <th className="px-4 py-2 text-left font-semibold text-teal-800">Type</th>
-                                        <th className="px-4 py-2 text-center font-semibold text-teal-800">Cut %</th>
-                                        <th className="px-4 py-2 text-right font-semibold text-teal-800">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200">
-                                    {doctorCuts.sessions.map(session => (
-                                        <tr key={session.id} className="hover:bg-slate-50">
-                                            <td className="px-4 py-2">{session.date}</td>
-                                            <td className="px-4 py-2">{session.patient_name}</td>
-                                            <td className="px-4 py-2">
-                                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${session.session_type === 'IN_CLINIC'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-purple-100 text-purple-800'
-                                                    }`}>
-                                                    {session.session_type === 'IN_CLINIC' ? '🏥 In-Clinic' : '💻 Online'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-center">{session.cut_percent || '—'}%</td>
-                                            <td className="px-4 py-2 text-right font-semibold">{session.amount.toLocaleString()} IQD</td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-teal-100">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left font-semibold text-teal-800">Date</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-teal-800">Patient</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-teal-800">Type</th>
+                                            <th className="px-4 py-2 text-center font-semibold text-teal-800">Cut %</th>
+                                            <th className="px-4 py-2 text-right font-semibold text-teal-800">Amount</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {doctorCuts.sessions.map(session => (
+                                            <tr key={session.id} className="hover:bg-slate-50">
+                                                <td className="px-4 py-2">{session.date}</td>
+                                                <td className="px-4 py-2">{session.patient_name}</td>
+                                                <td className="px-4 py-2">
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${session.session_type === 'IN_CLINIC'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : 'bg-purple-100 text-purple-800'
+                                                        }`}>
+                                                        {session.session_type === 'IN_CLINIC' ? '🏥 In-Clinic' : '💻 Online'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-2 text-center">{session.cut_percent || '—'}%</td>
+                                                <td className="px-4 py-2 text-right font-semibold">{session.amount.toLocaleString()} IQD</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
 
@@ -285,8 +287,8 @@ export default function MonthlyReport() {
                         <div className="bg-gray-800 text-white px-6 py-4">
                             <h3 className="font-bold text-xl">📋 Detailed Breakdown</h3>
                         </div>
-                        <div className="p-0">
-                            <table className="w-full">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50 border-b">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
