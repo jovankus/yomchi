@@ -24,11 +24,19 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 async function login() {
+    // Step 1: Clinic login
+    await fetchAPI('/clinic/login', {
+        method: 'POST',
+        body: JSON.stringify({ clinic_name: 'Yomchi Healthcare', clinic_password: 'TempClinic123!' })
+    });
+    console.log('✓ Clinic login successful');
+
+    // Step 2: Employee login (role-based auth)
     await fetchAPI('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ username: 'admin', password: 'admin123' })
+        body: JSON.stringify({ role: 'PERMANENT_DOCTOR', password: 'TempRole123!' })
     });
-    console.log('✓ Login successful\n');
+    console.log('✓ Employee login successful\n');
 }
 
 async function createTestPatient() {
