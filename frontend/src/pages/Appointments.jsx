@@ -12,36 +12,38 @@ export default function Appointments() {
     const navigate = useNavigate();
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
     const [successMsg, setSuccessMsg] = useState('');
 
+    // Debounce search input - 300ms delay
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
     const fetchAppointments = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const data = await getAppointments(date, search);
+            const data = await getAppointments(date, debouncedSearch);
             setAppointments(data);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [date, search]);
+    }, [date, debouncedSearch]);
 
+    // Fetch appointments when date or debounced search changes
     useEffect(() => {
         fetchAppointments();
     }, [fetchAppointments]);
-
-    // Debounce search
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchAppointments();
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [search]);
 
     const handleDelete = async (id, e) => {
         e.stopPropagation(); // Prevent card click

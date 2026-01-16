@@ -14,9 +14,10 @@ router.get('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     let params = [];
 
     if (search) {
-        query += ' WHERE first_name LIKE ? OR last_name LIKE ? OR phone LIKE ?';
+        query += ` WHERE first_name LIKE ? OR last_name LIKE ? OR phone LIKE ? 
+                   OR email LIKE ? OR (first_name || ' ' || last_name) LIKE ?`;
         const term = `%${search}%`;
-        params = [term, term, term];
+        params = [term, term, term, term, term];
     }
 
     query += ' ORDER BY last_name, first_name';

@@ -9,15 +9,26 @@ import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
 export default function Patients() {
     const [patients, setPatients] = useState([]);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [loading, setLoading] = useState(true);
 
+    // Debounce search input - 300ms delay
     useEffect(() => {
-        fetchPatients();
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 300);
+        return () => clearTimeout(timer);
     }, [search]);
 
+    // Fetch patients when debounced search changes
+    useEffect(() => {
+        fetchPatients();
+    }, [debouncedSearch]);
+
     const fetchPatients = async () => {
+        setLoading(true);
         try {
-            const query = search ? `?search=${encodeURIComponent(search)}` : '';
+            const query = debouncedSearch ? `?search=${encodeURIComponent(debouncedSearch)}` : '';
             const res = await fetch(`${API_BASE_URL}/patients${query}`, { credentials: 'include', headers: getAuthHeaders() });
             const data = await res.json();
             if (res.ok) {
