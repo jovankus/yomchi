@@ -629,31 +629,57 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /appointments/:id
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
 
-    db.get('SELECT * FROM appointments WHERE id = ?', [id], (err, appointment) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
-
-        // Role-based access: all authenticated users can delete appointments
-
-        // First delete related financial events (income and doctor cut)
-        db.run('DELETE FROM financial_events WHERE reference_type = ? AND reference_id = ?', ['APPOINTMENT', id], function (feErr) {
-            if (feErr) {
-                console.error('Error deleting financial events:', feErr);
-                // Continue with appointment deletion even if this fails
-            } else {
-                console.log(`[DELETE] Removed ${this.changes} financial events for appointment ${id}`);
-            }
-
-            // Then delete the appointment
-            db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Appointment and related financial events deleted successfully' });
+    try {
+        // Check if appointment exists
+        const appointment = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM appointments WHERE id = ?', [id], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
             });
         });
-    });
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Delete financial events by reference_type/reference_id (newer method)
+        const deletedByRef = await new Promise((resolve, reject) => {
+            db.run('DELETE FROM financial_events WHERE reference_type = ? AND reference_id = ?', ['APPOINTMENT', id], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+        console.log(`[DELETE] Removed ${deletedByRef} financial events by reference for appointment ${id}`);
+
+        // Also delete by related_appointment_id (legacy column)
+        const deletedByRelated = await new Promise((resolve, reject) => {
+            db.run('DELETE FROM financial_events WHERE related_appointment_id = ?', [id], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+        console.log(`[DELETE] Removed ${deletedByRelated} financial events by related_appointment_id for appointment ${id}`);
+
+        // Finally delete the appointment
+        await new Promise((resolve, reject) => {
+            db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+
+        const totalDeleted = deletedByRef + deletedByRelated;
+        res.json({
+            message: 'Appointment deleted successfully',
+            financial_events_deleted: totalDeleted
+        });
+    } catch (err) {
+        console.error('Error deleting appointment:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET /appointments/:id/income - Get income event for appointment
