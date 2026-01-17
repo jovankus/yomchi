@@ -1,0 +1,84 @@
+/* Prescription Print Styles - A5 Text-Only Layout */
+
+/* Hide form during print */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    /* A5 page setup */
+    @page {
+        size: A5 portrait;
+        margin: 0;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* Hide print area on screen */
+@media screen {
+    .print-only {
+        display: none;
+    }
+}
+
+/* A5 page container */
+.a5-page {
+    position: relative;
+    width: 148mm;
+    height: 210mm;
+    background: white;
+    page-break-after: always;
+}
+
+/* Common field styling */
+.rx-field {
+    position: absolute;
+    font-family: 'Arial', sans-serif;
+    font-size: 14pt;
+    color: black;
+    line-height: 1.4;
+}
+
+/* Patient name field */
+.rx-name {
+    font-weight: bold;
+    font-size: 16pt;
+}
+
+/* Age field */
+.rx-age {
+    font-size: 14pt;
+}
+
+/* Date field */
+.rx-date {
+    font-size: 14pt;
+}
+
+/* Drugs block */
+.rx-drugs {
+    font-size: 14pt;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+/* Print-specific adjustments */
+@media print {
+    .a5-page {
+        page-break-inside: avoid;
+    }
+
+    .rx-field {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

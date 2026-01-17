@@ -668,9 +668,14 @@ export default function PatientForm() {
                 action={
                     <div className="flex gap-2">
                         {id && (
-                            <Link to={`/patients/${id}/print`}>
-                                <Button variant="secondary">🖨️ Print / Export</Button>
-                            </Link>
+                            <>
+                                <Link to={`/patients/${id}/prescription`}>
+                                    <Button variant="secondary">📝 Print Prescription</Button>
+                                </Link>
+                                <Link to={`/patients/${id}/print`}>
+                                    <Button variant="secondary">🖨️ Print / Export</Button>
+                                </Link>
+                            </>
                         )}
                         <Link to="/patients">
                             <Button variant="secondary">← Back to Patients</Button>

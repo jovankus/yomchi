@@ -13,6 +13,7 @@ import PatientForm from './pages/PatientForm';
 import PatientPrintView from './pages/PatientPrintView';
 import PatientReports from './pages/PatientReports';
 import PatientReportView from './pages/PatientReportView';
+import PrescriptionForm from './pages/PrescriptionForm';
 import Appointments from './pages/Appointments';
 import TodayAppointments from './pages/TodayAppointments';
 import AppointmentForm from './pages/AppointmentForm';
@@ -91,6 +92,7 @@ function AppRoutes() {
                     <Route path="/patients/new" element={<AppShell><ErrorBoundary><PatientForm /></ErrorBoundary></AppShell>} />
                     <Route path="/patients/:id" element={<AppShell><ErrorBoundary><PatientForm /></ErrorBoundary></AppShell>} />
                     <Route path="/patients/:id/print" element={<PatientPrintView />} />
+                    <Route path="/patients/:id/prescription" element={<PrescriptionForm />} />
                 </Route>
 
                 {/* Patient Reports - Senior Doctor only (read-only view) */}
