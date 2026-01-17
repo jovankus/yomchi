@@ -128,40 +128,42 @@ export default function PrescriptionForm() {
             {/* Printable: A5 prescription */}
             <div className="print-only">
                 <div className="a5-page">
-                    {/* Date - upper left (yellow arrow) */}
+                    {/* Date - top left (yellow arrow) */}
                     <div className="rx-field rx-date" style={{
                         left: '15mm',
-                        top: '42mm',
+                        top: '12mm',
                         textAlign: 'left'
                     }}>
                         {new Date(date).toLocaleDateString('en-GB')}
                     </div>
 
-                    {/* Patient Name - right side (red arrow) */}
+                    {/* Age - top center (red arrow) */}
+                    <div className="rx-field rx-age" style={{
+                        left: '74mm',
+                        top: '12mm',
+                        textAlign: 'center',
+                        transform: 'translateX(-50%)'
+                    }}>
+                        {age}
+                    </div>
+
+                    {/* Patient Name - right side */}
                     <div className="rx-field rx-name" style={{
-                        right: '15mm',
-                        top: '58mm',
+                        right: '8mm',
+                        top: '45mm',
                         textAlign: 'right',
                         maxWidth: '60mm'
                     }}>
                         {patientName}
                     </div>
 
-                    {/* Age - below name (red arrow area) */}
-                    <div className="rx-field rx-age" style={{
-                        right: '15mm',
-                        top: '64mm',
-                        textAlign: 'right'
-                    }}>
-                        {age}
-                    </div>
-
-                    {/* Drugs block - positioned at green box areas */}
+                    {/* Drugs block - positioned at green box area (text only, no box) */}
                     <div className="rx-field rx-drugs" style={{
-                        left: '15mm',
-                        top: '75mm',
+                        left: '22mm',
+                        top: '70mm',
                         width: '118mm',
-                        height: '120mm'
+                        height: '120mm',
+                        fontSize: '18pt'
                     }}>
                         {drugs}
                     </div>
