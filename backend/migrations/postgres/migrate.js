@@ -86,7 +86,7 @@ const migrations = [
         amount REAL NOT NULL,
         category TEXT,
         description TEXT,
-        related_appointment_id INTEGER REFERENCES appointments(id),
+        related_appointment_id INTEGER REFERENCES appointments(id) ON DELETE CASCADE,
         reference_type TEXT,
         reference_id INTEGER,
         event_date TEXT NOT NULL,
@@ -326,6 +326,36 @@ const alterMigrations = [
     {
         name: 'add_reference_id_to_financial_events',
         sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER`
+    },
+    // Fix foreign key constraint on related_appointment_id to allow cascade delete
+    {
+        name: 'fix_related_appointment_id_cascade',
+        sql: `
+            DO $$ 
+            BEGIN
+                -- Drop existing constraint if it exists
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints 
+                    WHERE constraint_name = 'financial_events_related_appointment_id_fkey' 
+                    AND table_name = 'financial_events'
+                ) THEN
+                    ALTER TABLE financial_events 
+                    DROP CONSTRAINT financial_events_related_appointment_id_fkey;
+                END IF;
+                
+                -- Recreate with ON DELETE CASCADE
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints 
+                    WHERE constraint_name = 'financial_events_related_appointment_id_fkey_cascade' 
+                    AND table_name = 'financial_events'
+                ) THEN
+                    ALTER TABLE financial_events 
+                    ADD CONSTRAINT financial_events_related_appointment_id_fkey_cascade 
+                    FOREIGN KEY (related_appointment_id) 
+                    REFERENCES appointments(id) ON DELETE CASCADE;
+                END IF;
+            END $$;
+        `
     }
 ];
 
