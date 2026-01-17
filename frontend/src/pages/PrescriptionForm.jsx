@@ -128,40 +128,40 @@ export default function PrescriptionForm() {
             {/* Printable: A5 prescription */}
             <div className="print-only">
                 <div className="a5-page">
-                    {/* Patient Name - right-aligned at specified position */}
+                    {/* Date - upper left (yellow arrow) */}
+                    <div className="rx-field rx-date" style={{
+                        left: '15mm',
+                        top: '42mm',
+                        textAlign: 'left'
+                    }}>
+                        {new Date(date).toLocaleDateString('en-GB')}
+                    </div>
+
+                    {/* Patient Name - right side (red arrow) */}
                     <div className="rx-field rx-name" style={{
-                        right: '10mm',
-                        top: '55.5mm',
+                        right: '15mm',
+                        top: '58mm',
                         textAlign: 'right',
-                        maxWidth: '52mm'
+                        maxWidth: '60mm'
                     }}>
                         {patientName}
                     </div>
 
-                    {/* Age - right-aligned */}
+                    {/* Age - below name (red arrow area) */}
                     <div className="rx-field rx-age" style={{
-                        right: '10mm',
-                        top: '61.9mm',
+                        right: '15mm',
+                        top: '64mm',
                         textAlign: 'right'
                     }}>
                         {age}
                     </div>
 
-                    {/* Date - right-aligned */}
-                    <div className="rx-field rx-date" style={{
-                        right: '10mm',
-                        top: '68.4mm',
-                        textAlign: 'right'
-                    }}>
-                        {new Date(date).toLocaleDateString('en-GB')}
-                    </div>
-
-                    {/* Drugs block - left-aligned */}
+                    {/* Drugs block - positioned at green box areas */}
                     <div className="rx-field rx-drugs" style={{
-                        left: '20.5mm',
-                        top: '79.6mm',
-                        width: '108.2mm',
-                        height: '103.6mm'
+                        left: '15mm',
+                        top: '75mm',
+                        width: '118mm',
+                        height: '120mm'
                     }}>
                         {drugs}
                     </div>
