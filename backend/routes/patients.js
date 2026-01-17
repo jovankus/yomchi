@@ -126,13 +126,63 @@ router.put('/:id', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
         });
 });
 
-// Delete patient - Admin only
-router.delete('/:id', requireRole(ADMIN_ROLES), (req, res) => {
-    db.run('DELETE FROM patients WHERE id = ?', [req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Patient not found' });
-        res.json({ message: 'Patient deleted' });
-    });
+// Delete patient - Admin only (cascade deletes related records)
+router.delete('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
+    const patientId = req.params.id;
+
+    try {
+        // First, check if patient exists
+        const checkPatient = () => new Promise((resolve, reject) => {
+            db.get('SELECT id FROM patients WHERE id = ?', [patientId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const patient = await checkPatient();
+        if (!patient) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+
+        // Delete all related records first (order matters due to foreign key dependencies)
+        const deleteRelated = (table, column = 'patient_id') => new Promise((resolve, reject) => {
+            db.run(`DELETE FROM ${table} WHERE ${column} = ?`, [patientId], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+
+        // Delete financial_events linked to patient's appointments first
+        await new Promise((resolve, reject) => {
+            db.run(`DELETE FROM financial_events WHERE related_appointment_id IN (SELECT id FROM appointments WHERE patient_id = ?)`, [patientId], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+
+        // Delete related records from all tables that reference patients
+        await deleteRelated('appointments');
+        await deleteRelated('clinical_notes');
+        await deleteRelated('stock_movements');
+        await deleteRelated('patient_psychiatric_profile');
+        await deleteRelated('patient_symptoms');
+        await deleteRelated('patient_documents');
+        await deleteRelated('patient_asd_profile');
+        await deleteRelated('patient_asd_forms');
+
+        // Finally delete the patient
+        await new Promise((resolve, reject) => {
+            db.run('DELETE FROM patients WHERE id = ?', [patientId], function (err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+
+        res.json({ message: 'Patient deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting patient:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;
