@@ -1108,8 +1108,9 @@ export default function PatientForm() {
             )}
 
 
-            {/* Autism Profile - shown only if has_asd is true */}
-            {id && formData.has_asd && (
+            {/* Autism Profile - shown when has_asd is checked */}
+            {/* Removed id check - show immediately when has_asd */}
+            {formData.has_asd && (
                 <Card className="mt-6">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Autism Spectrum Disorder Profile</h3>
 
@@ -1207,8 +1208,9 @@ export default function PatientForm() {
             )}
 
 
-            {/* Autism Questionnaire - shown only if has_asd is true */}
-            {id && formData.has_asd && (
+            {/* Autism Questionnaire - shown when has_asd is checked */}
+            {/* Removed id check - show immediately when has_asd */}
+            {formData.has_asd && (
                 <Card className="mt-6">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Autism Screening Questionnaire</h3>
                     <p className="text-sm text-slate-600 mb-4">
@@ -1429,212 +1431,208 @@ export default function PatientForm() {
                 </Card>
             )}
 
-            {/* Symptoms Checklist - shown when editing */}
-            {id && (
-                <Card className="mt-6">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Symptoms Checklist</h3>
-                    <p className="text-sm text-slate-600 mb-4">
-                        Check all symptoms currently present. This is for clinical tracking only, not diagnostic assessment.
-                    </p>
+            {/* Symptoms Checklist - shown for all patients */}
+            <Card className="mt-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Symptoms Checklist</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                    Check all symptoms currently present. This is for clinical tracking only, not diagnostic assessment.
+                </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        {/* Mood Symptoms */}
-                        <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-slate-700 mb-2">Mood</h4>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.depression}
-                                    onChange={() => handleSymptomChange('depression')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Depression</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.mania}
-                                    onChange={() => handleSymptomChange('mania')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Mania</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.irritability}
-                                    onChange={() => handleSymptomChange('irritability')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Irritability</span>
-                            </label>
-                        </div>
-
-                        {/* Anxiety Symptoms */}
-                        <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-slate-700 mb-2">Anxiety</h4>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.anxiety}
-                                    onChange={() => handleSymptomChange('anxiety')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Anxiety</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.panic}
-                                    onChange={() => handleSymptomChange('panic')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Panic</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.ptsd}
-                                    onChange={() => handleSymptomChange('ptsd')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">PTSD</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.ocd}
-                                    onChange={() => handleSymptomChange('ocd')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">OCD</span>
-                            </label>
-                        </div>
-
-                        {/* Other Clinical Symptoms */}
-                        <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-slate-700 mb-2">Other</h4>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.psychosis}
-                                    onChange={() => handleSymptomChange('psychosis')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Psychosis</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.substance_use}
-                                    onChange={() => handleSymptomChange('substance_use')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Substance Use</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.sleep_problem}
-                                    onChange={() => handleSymptomChange('sleep_problem')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Sleep Problem</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.attention_problem}
-                                    onChange={() => handleSymptomChange('attention_problem')}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-slate-900">Attention Problem</span>
-                            </label>
-                        </div>
-
-                        {/* Risk Factors */}
-                        <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-red-700 mb-2">Risk Factors</h4>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.suicidal_ideation}
-                                    onChange={() => handleSymptomChange('suicidal_ideation')}
-                                    className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
-                                />
-                                <span className="text-sm text-slate-900">Suicidal Ideation</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={symptoms.self_harm}
-                                    onChange={() => handleSymptomChange('self_harm')}
-                                    className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
-                                />
-                                <span className="text-sm text-slate-900">Self Harm</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Clinical Notes */}
-                    <div className="mt-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                            Clinical Notes
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    {/* Mood Symptoms */}
+                    <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-slate-700 mb-2">Mood</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.depression}
+                                onChange={() => handleSymptomChange('depression')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Depression</span>
                         </label>
-                        <TextArea
-                            value={symptoms.notes}
-                            onChange={(e) => setSymptoms(prev => ({ ...prev, notes: e.target.value }))}
-                            placeholder="Brief clinical context or observations..."
-                            rows={3}
-                            className="mb-4"
-                        />
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.mania}
+                                onChange={() => handleSymptomChange('mania')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Mania</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.irritability}
+                                onChange={() => handleSymptomChange('irritability')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Irritability</span>
+                        </label>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button
-                            onClick={handleSaveSymptoms}
-                            disabled={symptomsLoading}
-                        >
-                            {symptomsLoading ? 'Saving...' : 'Save Symptoms'}
-                        </Button>
-                        {symptomsSaveSuccess && (
-                            <Alert variant="success" className="mb-0">
-                                Symptoms saved successfully!
-                            </Alert>
-                        )}
+                    {/* Anxiety Symptoms */}
+                    <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-slate-700 mb-2">Anxiety</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.anxiety}
+                                onChange={() => handleSymptomChange('anxiety')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Anxiety</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.panic}
+                                onChange={() => handleSymptomChange('panic')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Panic</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.ptsd}
+                                onChange={() => handleSymptomChange('ptsd')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">PTSD</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.ocd}
+                                onChange={() => handleSymptomChange('ocd')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">OCD</span>
+                        </label>
                     </div>
-                </Card>
-            )}
 
+                    {/* Other Clinical Symptoms */}
+                    <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-slate-700 mb-2">Other</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.psychosis}
+                                onChange={() => handleSymptomChange('psychosis')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Psychosis</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.substance_use}
+                                onChange={() => handleSymptomChange('substance_use')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Substance Use</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.sleep_problem}
+                                onChange={() => handleSymptomChange('sleep_problem')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Sleep Problem</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.attention_problem}
+                                onChange={() => handleSymptomChange('attention_problem')}
+                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-900">Attention Problem</span>
+                        </label>
+                    </div>
 
-            {/* Psychiatric History Section - shown when editing */}
-            {id && (
-                <Card className="mt-6">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Psychiatric History</h3>
+                    {/* Risk Factors */}
+                    <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-red-700 mb-2">Risk Factors</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.suicidal_ideation}
+                                onChange={() => handleSymptomChange('suicidal_ideation')}
+                                className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                            />
+                            <span className="text-sm text-slate-900">Suicidal Ideation</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={symptoms.self_harm}
+                                onChange={() => handleSymptomChange('self_harm')}
+                                className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                            />
+                            <span className="text-sm text-slate-900">Self Harm</span>
+                        </label>
+                    </div>
+                </div>
 
+                {/* Clinical Notes */}
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                        Clinical Notes
+                    </label>
                     <TextArea
-                        value={psychiatricHistory}
-                        onChange={(e) => setPsychiatricHistory(e.target.value)}
-                        placeholder="Enter psychiatric history narrative..."
-                        rows={12}
+                        value={symptoms.notes}
+                        onChange={(e) => setSymptoms(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Brief clinical context or observations..."
+                        rows={3}
                         className="mb-4"
                     />
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button
-                            onClick={handleSavePsychiatricHistory}
-                            disabled={historyLoading}
-                        >
-                            {historyLoading ? 'Saving...' : 'Save Psychiatric History'}
-                        </Button>
-                        {historySaveSuccess && (
-                            <Alert variant="success" className="mb-0">
-                                Psychiatric history saved successfully!
-                            </Alert>
-                        )}
-                    </div>
-                </Card>
-            )}
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={handleSaveSymptoms}
+                        disabled={symptomsLoading}
+                    >
+                        {symptomsLoading ? 'Saving...' : 'Save Symptoms'}
+                    </Button>
+                    {symptomsSaveSuccess && (
+                        <Alert variant="success" className="mb-0">
+                            Symptoms saved successfully!
+                        </Alert>
+                    )}
+                </div>
+            </Card>
+
+
+            {/* Psychiatric History Section - shown for all patients */}
+            <Card className="mt-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Psychiatric History</h3>
+
+                <TextArea
+                    value={psychiatricHistory}
+                    onChange={(e) => setPsychiatricHistory(e.target.value)}
+                    placeholder="Enter psychiatric history narrative..."
+                    rows={12}
+                    className="mb-4"
+                />
+
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={handleSavePsychiatricHistory}
+                        disabled={historyLoading}
+                    >
+                        {historyLoading ? 'Saving...' : 'Save Psychiatric History'}
+                    </Button>
+                    {historySaveSuccess && (
+                        <Alert variant="success" className="mb-0">
+                            Psychiatric history saved successfully!
+                        </Alert>
+                    )}
+                </div>
+            </Card>
 
 
             {/* Prescription Documents - shown when editing */}
