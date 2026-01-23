@@ -356,6 +356,16 @@ const alterMigrations = [
                 END IF;
             END $$;
         `
+    },
+    // Add uploaded_at column to patient_documents if it doesn't exist
+    {
+        name: 'add_uploaded_at_to_patient_documents',
+        sql: `ALTER TABLE patient_documents ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+    },
+    // Add doc_date column to patient_documents if it doesn't exist
+    {
+        name: 'add_doc_date_to_patient_documents',
+        sql: `ALTER TABLE patient_documents ADD COLUMN IF NOT EXISTS doc_date DATE`
     }
 ];
 
