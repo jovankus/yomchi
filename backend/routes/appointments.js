@@ -631,9 +631,10 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /appointments/:id
 router.delete('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
+    const isProduction = !!process.env.DATABASE_URL;
 
     try {
-        // Check if appointment exists
+        // Check if appointment exists first
         const appointment = await new Promise((resolve, reject) => {
             db.get('SELECT * FROM appointments WHERE id = ?', [id], (err, row) => {
                 if (err) reject(err);
@@ -645,37 +646,118 @@ router.delete('/:id', requireAuth, async (req, res) => {
             return res.status(404).json({ error: 'Appointment not found' });
         }
 
-        // Delete financial events by reference_type/reference_id (newer method)
-        const deletedByRef = await new Promise((resolve, reject) => {
-            db.run('DELETE FROM financial_events WHERE reference_type = ? AND reference_id = ?', ['APPOINTMENT', id], function (err) {
-                if (err) reject(err);
-                else resolve(this.changes);
-            });
-        });
-        console.log(`[DELETE] Removed ${deletedByRef} financial events by reference for appointment ${id}`);
+        // Use transaction to ensure atomicity
+        if (isProduction && db.pool) {
+            // PostgreSQL transaction
+            const client = await db.pool.connect();
+            try {
+                await client.query('BEGIN');
 
-        // Also delete by related_appointment_id (legacy column)
-        const deletedByRelated = await new Promise((resolve, reject) => {
-            db.run('DELETE FROM financial_events WHERE related_appointment_id = ?', [id], function (err) {
-                if (err) reject(err);
-                else resolve(this.changes);
-            });
-        });
-        console.log(`[DELETE] Removed ${deletedByRelated} financial events by related_appointment_id for appointment ${id}`);
+                // Delete financial events by reference
+                const result1 = await client.query(
+                    'DELETE FROM financial_events WHERE reference_type = $1 AND reference_id = $2',
+                    ['APPOINTMENT', id]
+                );
+                const deletedByRef = result1.rowCount;
 
-        // Finally delete the appointment
-        await new Promise((resolve, reject) => {
-            db.run('DELETE FROM appointments WHERE id = ?', [id], function (err) {
-                if (err) reject(err);
-                else resolve(this.changes);
-            });
-        });
+                // Delete financial events by legacy column
+                const result2 = await client.query(
+                    'DELETE FROM financial_events WHERE related_appointment_id = $1',
+                    [id]
+                );
+                const deletedByRelated = result2.rowCount;
 
-        const totalDeleted = deletedByRef + deletedByRelated;
-        res.json({
-            message: 'Appointment deleted successfully',
-            financial_events_deleted: totalDeleted
-        });
+                // Delete the appointment
+                await client.query('DELETE FROM appointments WHERE id = $1', [id]);
+
+                await client.query('COMMIT');
+
+                const totalDeleted = deletedByRef + deletedByRelated;
+                console.log(`[DELETE] Transaction committed: removed appointment ${id} and ${totalDeleted} financial events`);
+
+                res.json({
+                    message: 'Appointment deleted successfully',
+                    financial_events_deleted: totalDeleted
+                });
+            } catch (err) {
+                await client.query('ROLLBACK');
+                console.error('[DELETE] Transaction rolled back:', err);
+                throw err;
+            } finally {
+                client.release();
+            }
+        } else {
+            // SQLite transaction
+            return new Promise((resolve, reject) => {
+                db.serialize(() => {
+                    db.run('BEGIN TRANSACTION', (err) => {
+                        if (err) return reject(err);
+
+                        let deletedByRef = 0;
+                        let deletedByRelated = 0;
+
+                        // Delete financial events by reference
+                        db.run(
+                            'DELETE FROM financial_events WHERE reference_type = ? AND reference_id = ?',
+                            ['APPOINTMENT', id],
+                            function (err) {
+                                if (err) {
+                                    db.run('ROLLBACK');
+                                    return reject(err);
+                                }
+                                deletedByRef = this.changes;
+
+                                // Delete financial events by legacy column
+                                db.run(
+                                    'DELETE FROM financial_events WHERE related_appointment_id = ?',
+                                    [id],
+                                    function (err) {
+                                        if (err) {
+                                            db.run('ROLLBACK');
+                                            return reject(err);
+                                        }
+                                        deletedByRelated = this.changes;
+
+                                        // Delete the appointment
+                                        db.run(
+                                            'DELETE FROM appointments WHERE id = ?',
+                                            [id],
+                                            function (err) {
+                                                if (err) {
+                                                    db.run('ROLLBACK');
+                                                    return reject(err);
+                                                }
+
+                                                // Commit transaction
+                                                db.run('COMMIT', (err) => {
+                                                    if (err) {
+                                                        db.run('ROLLBACK');
+                                                        return reject(err);
+                                                    }
+
+                                                    const totalDeleted = deletedByRef + deletedByRelated;
+                                                    console.log(`[DELETE] Transaction committed: removed appointment ${id} and ${totalDeleted} financial events`);
+
+                                                    resolve({
+                                                        message: 'Appointment deleted successfully',
+                                                        financial_events_deleted: totalDeleted
+                                                    });
+                                                });
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        );
+                    });
+                });
+            })
+                .then(result => res.json(result))
+                .catch(err => {
+                    console.error('Error deleting appointment:', err);
+                    res.status(500).json({ error: err.message });
+                });
+        }
     } catch (err) {
         console.error('Error deleting appointment:', err);
         res.status(500).json({ error: err.message });
