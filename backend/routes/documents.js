@@ -146,7 +146,29 @@ router.get('/documents/:documentId/file', requireAuth, (req, res) => {
 
         // Check if file_path is a URL (cloud storage)
         if (doc.file_path.startsWith('http://') || doc.file_path.startsWith('https://')) {
-            // Cloud storage - redirect to R2 URL
+            // Cloud storage - redirect to R2 URL (Signed if possible)
+            if (useCloudStorage) {
+                try {
+                    const { getSignedUrlFromR2, extractKeyFromUrl } = require('../services/r2-storage');
+                    const key = extractKeyFromUrl(doc.file_path);
+
+                    if (key) {
+                        // Generate signed URL (valid for 1 hour)
+                        getSignedUrlFromR2(key, 3600)
+                            .then(signedUrl => res.redirect(signedUrl))
+                            .catch(err => {
+                                console.error('Error generating signed URL:', err);
+                                // Fallback to direct URL if signing fails
+                                res.redirect(doc.file_path);
+                            });
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Error using R2 service:', err);
+                }
+            }
+
+            // Fallback for when R2 is not configured or key extraction fails
             return res.redirect(doc.file_path);
         }
 
