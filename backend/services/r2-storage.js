@@ -3,7 +3,7 @@
  * Handles file uploads to R2 for production environments
  */
 
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // Initialize R2 client only if credentials are provided
@@ -96,6 +96,84 @@ const getSignedUrlFromR2 = async (key, expiresIn = 3600) => {
 };
 
 /**
+ * Delete file from R2
+ * @param {string} key - Object key (path) to delete
+ * @returns {Promise<void>}
+ */
+const deleteFromR2 = async (key) => {
+    const client = initR2Client();
+    if (!client) {
+        throw new Error('R2 not configured');
+    }
+
+    const bucketName = process.env.R2_BUCKET_NAME;
+    if (!bucketName) {
+        throw new Error('R2_BUCKET_NAME not set');
+    }
+
+    try {
+        const command = new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: key
+        });
+
+        await client.send(command);
+        console.log(`✓ Deleted from R2: ${key}`);
+    } catch (error) {
+        console.error(`✗ Error deleting from R2: ${key}`, error.message);
+        throw error;
+    }
+};
+
+/**
+ * Check if file exists in R2
+ * @param {string} key - Object key to check
+ * @returns {Promise<boolean>}
+ */
+const fileExistsInR2 = async (key) => {
+    const client = initR2Client();
+    if (!client) {
+        throw new Error('R2 not configured');
+    }
+
+    const bucketName = process.env.R2_BUCKET_NAME;
+
+    try {
+        const command = new HeadObjectCommand({
+            Bucket: bucketName,
+            Key: key
+        });
+
+        await client.send(command);
+        return true;
+    } catch (error) {
+        if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+            return false;
+        }
+        throw error;
+    }
+};
+
+/**
+ * Extract R2 key from URL
+ * @param {string} url - Full R2 URL
+ * @returns {string|null} - Key or null if not an R2 URL
+ */
+const extractKeyFromUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+
+    // Check if it's an R2 URL
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return null;
+    }
+
+    // Extract key from URL (everything after the domain)
+    const urlObj = new URL(url);
+    const key = urlObj.pathname.substring(1); // Remove leading slash
+    return key || null;
+};
+
+/**
  * Check if R2 is configured and available
  * @returns {boolean}
  */
@@ -109,5 +187,8 @@ const isR2Available = () => {
 module.exports = {
     uploadToR2,
     getSignedUrlFromR2,
+    deleteFromR2,
+    fileExistsInR2,
+    extractKeyFromUrl,
     isR2Available
 };

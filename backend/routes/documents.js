@@ -176,4 +176,49 @@ router.get('/documents/:documentId/file', requireAuth, (req, res) => {
     });
 });
 
+// DELETE - Delete document
+router.delete('/documents/:documentId', requireAuth, (req, res) => {
+    const { documentId } = req.params;
+
+    db.get('SELECT * FROM patient_documents WHERE id = ?', [documentId], async (err, doc) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+        try {
+            // Delete file from storage
+            if (doc.file_path.startsWith('http://') || doc.file_path.startsWith('https://')) {
+                // Cloud storage - delete from R2
+                if (useCloudStorage) {
+                    const { deleteFromR2, extractKeyFromUrl } = require('../services/r2-storage');
+                    const key = extractKeyFromUrl(doc.file_path);
+                    if (key) {
+                        await deleteFromR2(key);
+                    }
+                }
+            } else {
+                // Local storage - delete from disk
+                const filePath = path.join(__dirname, '..', 'uploads', doc.file_path);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log(`✓ Deleted local file: ${doc.file_path}`);
+                }
+            }
+
+            // Delete from database
+            db.run('DELETE FROM patient_documents WHERE id = ?', [documentId], function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+
+                res.json({
+                    message: 'Document deleted successfully',
+                    deletedId: documentId
+                });
+            });
+
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+});
+
 module.exports = router;
