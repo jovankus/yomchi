@@ -84,10 +84,10 @@ router.post('/:id/documents', requireAuth, upload.single('file'), async (req, re
         }
 
         const sql = `INSERT INTO patient_documents 
-                    (patient_id, doc_type, file_path, original_name, doc_date, uploaded_by)
-                    VALUES (?, ?, ?, ?, ?, ?)`;
+                    (patient_id, doc_type, filename, file_path, original_name, doc_date, uploaded_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-        db.run(sql, [id, doc_type, filePath, req.file.originalname, doc_date, userId], function (err) {
+        db.run(sql, [id, doc_type, req.file.originalname, filePath, req.file.originalname, doc_date, userId], function (err) {
             if (err) {
                 // Clean up uploaded file on database error (local only)
                 if (!useCloudStorage && req.file.path) {
