@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { PharmacyProvider } from './context/PharmacyContext';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AppShell from './components/AppShell';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
@@ -131,13 +132,15 @@ function AppRoutes() {
 function App() {
     return (
         <BrowserRouter>
-            <ClinicProvider>
-                <AuthProvider>
-                    <PharmacyProvider>
-                        <AppRoutes />
-                    </PharmacyProvider>
-                </AuthProvider>
-            </ClinicProvider>
+            <ThemeProvider>
+                <ClinicProvider>
+                    <AuthProvider>
+                        <PharmacyProvider>
+                            <AppRoutes />
+                        </PharmacyProvider>
+                    </AuthProvider>
+                </ClinicProvider>
+            </ThemeProvider>
         </BrowserRouter>
     );
 }

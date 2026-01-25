@@ -4,24 +4,40 @@
 
 :root {
     /* ========== SPACING SCALE ========== */
-    --space-1: 0.25rem;   /* 4px */
-    --space-2: 0.5rem;    /* 8px */
-    --space-3: 0.75rem;   /* 12px */
-    --space-4: 1rem;      /* 16px */
-    --space-5: 1.5rem;    /* 24px */
-    --space-6: 2rem;      /* 32px */
-    --space-8: 3rem;      /* 48px */
-    --space-10: 4rem;     /* 64px */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-5: 1.5rem;
+    /* 24px */
+    --space-6: 2rem;
+    /* 32px */
+    --space-8: 3rem;
+    /* 48px */
+    --space-10: 4rem;
+    /* 64px */
 
     /* ========== TYPOGRAPHY SCALE ========== */
-    --text-xs: 0.75rem;     /* 12px */
-    --text-sm: 0.875rem;    /* 14px */
-    --text-base: 1rem;      /* 16px */
-    --text-lg: 1.125rem;    /* 18px */
-    --text-xl: 1.25rem;     /* 20px */
-    --text-2xl: 1.5rem;     /* 24px */
-    --text-3xl: 1.875rem;   /* 30px */
-    --text-4xl: 2.25rem;    /* 36px */
+    --text-xs: 0.75rem;
+    /* 12px */
+    --text-sm: 0.875rem;
+    /* 14px */
+    --text-base: 1rem;
+    /* 16px */
+    --text-lg: 1.125rem;
+    /* 18px */
+    --text-xl: 1.25rem;
+    /* 20px */
+    --text-2xl: 1.5rem;
+    /* 24px */
+    --text-3xl: 1.875rem;
+    /* 30px */
+    --text-4xl: 2.25rem;
+    /* 36px */
 
     /* ========== FONT WEIGHTS ========== */
     --font-normal: 400;
@@ -29,62 +45,107 @@
     --font-semibold: 600;
     --font-bold: 700;
 
-    /* ========== COLOR TOKENS ========== */
-    /* Primary */
-    --primary-50: #eff6ff;
-    --primary-100: #dbeafe;
-    --primary-200: #bfdbfe;
-    --primary-300: #93c5fd;
-    --primary-400: #60a5fa;
-    --primary-500: #3b82f6;
-    --primary-600: #2563eb;
-    --primary-700: #1d4ed8;
-    
-    /* Success */
-    --success-50: #f0fdf4;
-    --success-100: #dcfce7;
+    /* ========== DARK VIOLET COLOR PALETTE ========== */
+
+    /* Violet Primary Scale */
+    --violet-50: #f5f3ff;
+    --violet-100: #ede9fe;
+    --violet-200: #ddd6fe;
+    --violet-300: #c4b5fd;
+    --violet-400: #a78bfa;
+    --violet-500: #8b5cf6;
+    --violet-600: #7c3aed;
+    --violet-700: #6d28d9;
+    --violet-800: #5b21b6;
+    --violet-900: #4c1d95;
+
+    /* Dark Backgrounds */
+    --dark-950: #0a0a0f;
+    --dark-900: #121218;
+    --dark-850: #1a1a24;
+    --dark-800: #1e1e2e;
+    --dark-750: #252535;
+    --dark-700: #2d2d3f;
+    --dark-600: #363649;
+
+    /* Success (Green) */
+    --success-400: #4ade80;
     --success-500: #22c55e;
     --success-600: #16a34a;
     --success-700: #15803d;
-    
-    /* Warning */
-    --warning-50: #fffbeb;
-    --warning-100: #fef3c7;
+
+    /* Warning (Amber) */
+    --warning-400: #fbbf24;
     --warning-500: #f59e0b;
     --warning-600: #d97706;
     --warning-700: #b45309;
-    
-    /* Error */
-    --error-50: #fef2f2;
-    --error-100: #fee2e2;
-    --error-500: #ef4444;
-    --error-600: #dc2626;
-    --error-700: #b91c1c;
-    
-    /* Neutral (Slate) */
-    --slate-50: #f8fafc;
-    --slate-100: #f1f5f9;
-    --slate-200: #e2e8f0;
-    --slate-300: #cbd5e1;
-    --slate-400: #94a3b8;
-    --slate-500: #64748b;
-    --slate-600: #475569;
-    --slate-700: #334155;
-    --slate-800: #1e293b;
-    --slate-900: #0f172a;
 
-    /* ========== SEMANTIC COLORS ========== */
-    --text-primary: var(--slate-900);
-    --text-secondary: var(--slate-600);
-    --text-muted: var(--slate-400);
-    --text-inverse: white;
-    
-    --bg-primary: white;
-    --bg-secondary: var(--slate-50);
-    --bg-muted: var(--slate-100);
-    
-    --border-default: var(--slate-200);
-    --border-focus: var(--primary-500);
+    /* Danger (Red) */
+    --danger-400: #f87171;
+    --danger-500: #ef4444;
+    --danger-600: #dc2626;
+    --danger-700: #b91c1c;
+
+    /* Text Colors for Dark Theme */
+    --text-50: #fafafa;
+    --text-100: #f4f4f5;
+    --text-200: #e4e4e7;
+    --text-300: #d4d4d8;
+    --text-400: #a1a1aa;
+    --text-500: #71717a;
+
+    /* ========== SEMANTIC THEME TOKENS ========== */
+
+    /* Backgrounds */
+    --bg: var(--dark-950);
+    /* Main background */
+    --bg-2: var(--dark-900);
+    /* Secondary background */
+    --panel: var(--dark-800);
+    /* Panel/card background */
+    --panel-hover: var(--dark-750);
+    /* Hover state for panels */
+
+    /* Text */
+    --text: var(--text-50);
+    /* Primary text */
+    --muted: var(--text-400);
+    /* Muted/secondary text */
+
+    /* Borders */
+    --border: var(--dark-700);
+    /* Default border */
+    --border-focus: var(--violet-500);
+    /* Focus border */
+
+    /* Primary Violet */
+    --primary: var(--violet-600);
+    /* Primary brand color */
+    --primary-2: var(--violet-700);
+    /* Darker primary (hover) */
+    --primary-contrast: var(--text-50);
+    /* Text on primary */
+
+    /* Semantic Status Colors */
+    --danger: var(--danger-500);
+    --warning: var(--warning-500);
+    --success: var(--success-500);
+
+    /* Focus Ring */
+    --ring: var(--violet-500);
+
+    /* ========== LEGACY SUPPORT (for gradual migration) ========== */
+    --text-primary: var(--text);
+    --text-secondary: var(--muted);
+    --text-muted: var(--text-500);
+    --text-inverse: var(--dark-950);
+
+    --bg-primary: var(--panel);
+    --bg-secondary: var(--bg-2);
+    --bg-muted: var(--bg);
+
+    --border-default: var(--border);
+    --border-focus: var(--ring);
 
     /* ========== SHADOWS ========== */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -104,27 +165,126 @@
     --transition-slow: 300ms ease;
 }
 
+/* ========== DARK CLASS (EXPLICIT DARK MODE) ========== */
+.dark {
+    /* Backgrounds */
+    --bg: var(--dark-950);
+    --bg-2: var(--dark-900);
+    --panel: var(--dark-800);
+    --panel-hover: var(--dark-750);
+
+    /* Text */
+    --text: var(--text-50);
+    --muted: var(--text-400);
+
+    /* Borders */
+    --border: var(--dark-700);
+    --border-focus: var(--violet-500);
+
+    /* Primary Violet */
+    --primary: var(--violet-600);
+    --primary-2: var(--violet-700);
+    --primary-contrast: var(--text-50);
+
+    /* Semantic Status Colors */
+    --danger: var(--danger-500);
+    --warning: var(--warning-500);
+    --success: var(--success-500);
+
+    /* Focus Ring */
+    --ring: var(--violet-500);
+}
+
+/* ========== LIGHT THEME (OPTIONAL) ========== */
+.light {
+    /* Backgrounds */
+    --bg: #fafafa;
+    --bg-2: #f5f5f5;
+    --panel: #ffffff;
+    --panel-hover: #f9f9fb;
+
+    /* Text */
+    --text: #0f0f14;
+    --muted: #64748b;
+
+    /* Borders */
+    --border: #e2e8f0;
+    --border-focus: var(--violet-500);
+
+    /* Primary Violet (same as dark) */
+    --primary: var(--violet-600);
+    --primary-2: var(--violet-700);
+    --primary-contrast: var(--text-50);
+
+    /* Semantic Status Colors */
+    --danger: var(--danger-600);
+    --warning: var(--warning-600);
+    --success: var(--success-600);
+
+    /* Focus Ring */
+    --ring: var(--violet-500);
+}
+
+
 /* ========== UTILITY CLASSES ========== */
 
-.text-xs { font-size: var(--text-xs); }
-.text-sm { font-size: var(--text-sm); }
-.text-base { font-size: var(--text-base); }
-.text-lg { font-size: var(--text-lg); }
-.text-xl { font-size: var(--text-xl); }
-.text-2xl { font-size: var(--text-2xl); }
+.text-xs {
+    font-size: var(--text-xs);
+}
 
-.font-medium { font-weight: var(--font-medium); }
-.font-semibold { font-weight: var(--font-semibold); }
-.font-bold { font-weight: var(--font-bold); }
+.text-sm {
+    font-size: var(--text-sm);
+}
 
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-muted { color: var(--text-muted); }
+.text-base {
+    font-size: var(--text-base);
+}
+
+.text-lg {
+    font-size: var(--text-lg);
+}
+
+.text-xl {
+    font-size: var(--text-xl);
+}
+
+.text-2xl {
+    font-size: var(--text-2xl);
+}
+
+.font-medium {
+    font-weight: var(--font-medium);
+}
+
+.font-semibold {
+    font-weight: var(--font-semibold);
+}
+
+.font-bold {
+    font-weight: var(--font-bold);
+}
+
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
 
 /* ========== LOADING ANIMATION ========== */
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .animate-spin {
@@ -132,8 +292,15 @@
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .animate-pulse {
@@ -146,6 +313,7 @@
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -157,6 +325,7 @@
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(100%);
         opacity: 0;

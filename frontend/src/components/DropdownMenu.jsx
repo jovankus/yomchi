@@ -9,9 +9,9 @@ function DropdownLink({ to, children, onClick }) {
         <Link
             to={to}
             onClick={onClick}
-            className={`block px-4 py-2 text-sm transition-colors ${isActive
-                    ? 'bg-primary-50 text-primary-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-100'
+            className={`block px-4 py-2 text-sm transition-all rounded-md mx-1 ${isActive
+                    ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary'
+                    : 'text-[var(--text)] hover:bg-[var(--panel-hover)] hover:text-primary'
                 }`}
         >
             {children}
@@ -68,9 +68,9 @@ export default function DropdownMenu({ label, basePath, children }) {
         >
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1 ${isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-slate-700 hover:bg-slate-100'
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 inline-flex items-center gap-1 relative ${isActive
+                        ? 'bg-primary text-[var(--primary-contrast)] shadow-sm shadow-primary/20'
+                        : 'text-[var(--text)] hover:bg-[var(--panel-hover)] hover:text-primary'
                     }`}
             >
                 {label}
@@ -82,10 +82,13 @@ export default function DropdownMenu({ label, basePath, children }) {
                 >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
+                {isActive && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-[var(--ring)] rounded-full" />
+                )}
             </button>
 
             {isOpen && (
-                <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 animate-fade-in">
+                <div className="absolute left-0 mt-2 w-56 bg-[var(--panel)] rounded-lg shadow-2xl border border-[var(--border)] py-1 z-50 animate-fade-in">
                     {children &&
                         (Array.isArray(children)
                             ? children.map((child, index) => (

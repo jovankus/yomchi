@@ -8,13 +8,13 @@ export default function Button({
     className = '',
     ...props
 }) {
-    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg)] disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants = {
-        primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow',
-        secondary: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-primary-500 shadow-sm',
-        danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm hover:shadow',
-        ghost: 'text-slate-700 hover:bg-slate-100 focus:ring-slate-500',
+        primary: 'bg-primary text-[var(--primary-contrast)] hover:bg-primary-700 focus:ring-[var(--ring)] shadow-sm hover:shadow-md',
+        secondary: 'bg-[var(--panel)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--panel-hover)] hover:border-primary/50 focus:ring-[var(--ring)] shadow-sm',
+        danger: 'bg-danger text-white hover:bg-danger-600 focus:ring-danger shadow-sm hover:shadow-md',
+        ghost: 'text-[var(--text)] hover:bg-[var(--panel-hover)] hover:text-primary focus:ring-[var(--ring)]',
     };
 
     const sizes = {

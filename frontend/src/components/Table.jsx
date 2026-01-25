@@ -1,7 +1,7 @@
 export default function Table({ children, className = '' }) {
     return (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm bg-white">
-            <table className={`min-w-full divide-y divide-slate-200 ${className}`}>
+        <div className="overflow-x-auto rounded-lg border border-[var(--border)] shadow-lg bg-[var(--panel)]">
+            <table className={`min-w-full divide-y divide-[var(--border)] ${className}`}>
                 {children}
             </table>
         </div>
@@ -10,7 +10,7 @@ export default function Table({ children, className = '' }) {
 
 export function TableHead({ children }) {
     return (
-        <thead className="bg-slate-50">
+        <thead className="bg-[var(--bg-2)]">
             {children}
         </thead>
     );
@@ -18,7 +18,7 @@ export function TableHead({ children }) {
 
 export function TableBody({ children }) {
     return (
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-[var(--border)] bg-[var(--panel)]">
             {children}
         </tbody>
     );
@@ -26,7 +26,7 @@ export function TableBody({ children }) {
 
 export function TableRow({ children, className = '', ...props }) {
     return (
-        <tr className={`hover:bg-slate-50 transition-colors ${className}`} {...props}>
+        <tr className={`hover:bg-[var(--panel-hover)] transition-colors even:bg-[var(--bg-2)]/30 ${className}`} {...props}>
             {children}
         </tr>
     );
@@ -34,7 +34,7 @@ export function TableRow({ children, className = '', ...props }) {
 
 export function TableHeader({ children, className = '' }) {
     return (
-        <th className={`px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider ${className}`}>
+        <th className={`px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider ${className}`}>
             {children}
         </th>
     );
@@ -42,7 +42,7 @@ export function TableHeader({ children, className = '' }) {
 
 export function TableCell({ children, className = '' }) {
     return (
-        <td className={`px-6 py-4 text-sm text-slate-900 ${className}`}>
+        <td className={`px-6 py-4 text-sm text-[var(--text)] ${className}`}>
             {children}
         </td>
     );
