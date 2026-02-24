@@ -12,9 +12,7 @@ if (isProduction) {
     const { Pool } = require('pg');
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes('supabase') 
-            ? { rejectUnauthorized: false }
-            : false
+        ssl: { rejectUnauthorized: false }
     });
 
     // Create SQLite-compatible interface for PostgreSQL
@@ -30,7 +28,7 @@ if (isProduction) {
             const pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
             let paramIndex = 0;
             const finalSql = pgSql.replace(/\$\d+/g, () => `$${++paramIndex}`);
-            
+
             pool.query(finalSql, params || [])
                 .then(result => callback(null, result.rows))
                 .catch(err => callback(err));
@@ -44,7 +42,7 @@ if (isProduction) {
             }
             let paramIndex = 0;
             const pgSql = sql.replace(/\?/g, () => `$${++paramIndex}`);
-            
+
             pool.query(pgSql, params || [])
                 .then(result => callback(null, result.rows[0]))
                 .catch(err => callback(err));
@@ -58,13 +56,13 @@ if (isProduction) {
             }
             let paramIndex = 0;
             let pgSql = sql.replace(/\?/g, () => `$${++paramIndex}`);
-            
+
             // Handle INSERT with RETURNING for lastID
             const isInsert = sql.trim().toUpperCase().startsWith('INSERT');
             if (isInsert && !pgSql.includes('RETURNING')) {
                 pgSql = pgSql.replace(/;?\s*$/, ' RETURNING id;');
             }
-            
+
             pool.query(pgSql, params || [])
                 .then(result => {
                     // Create context object similar to SQLite
@@ -93,7 +91,7 @@ if (isProduction) {
 
         // Direct query access for complex operations
         query: (sql, params) => pool.query(sql, params),
-        
+
         // Pool reference for advanced usage
         pool
     };
@@ -104,9 +102,9 @@ if (isProduction) {
     // SQLite for local development
     const sqlite3 = require('sqlite3').verbose();
     const path = require('path');
-    
+
     const dbPath = process.env.DB_PATH || path.resolve(__dirname, 'database.sqlite');
-    
+
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
             console.error('Error opening database', err.message);
