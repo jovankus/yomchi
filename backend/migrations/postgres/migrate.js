@@ -472,6 +472,24 @@ const alterMigrations = [
                 END IF;
             END $$;
         `
+    },
+
+    // Fix clinical_notes - add missing columns for follow-up notes
+    {
+        name: 'add_appointment_id_to_notes',
+        sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS appointment_id INTEGER`
+    },
+    {
+        name: 'add_changes_since_last_visit',
+        sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS changes_since_last_visit TEXT`
+    },
+    {
+        name: 'add_medication_adherence_change',
+        sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS medication_adherence_change TEXT`
+    },
+    {
+        name: 'add_side_effects_change',
+        sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS side_effects_change TEXT`
     }
 ];
 
