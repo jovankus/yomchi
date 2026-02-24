@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { logAudit } = require('../middleware/auditLog');
 const crypto = require('crypto');
 const router = express.Router();
 const db = require('../db');
@@ -127,6 +128,13 @@ router.post('/login', async (req, res) => {
                     },
                     token: employeeToken,
                     deviceToken: deviceToken // Only set if rememberDevice was true
+                });
+
+                logAudit(req, {
+                    action: 'LOGIN',
+                    entityType: 'AUTH',
+                    entityId: roleRecord.id,
+                    details: { role: roleRecord.role, clinic_id: clinicId, clinic_name: clinicName }
                 });
             } else {
                 res.status(401).json({ message: 'Invalid credentials' });
@@ -263,6 +271,12 @@ router.get('/devices', (req, res) => {
 
 // POST /auth/logout - Clear employee session (keep clinic session)
 router.post('/logout', (req, res) => {
+    logAudit(req, {
+        action: 'LOGOUT',
+        entityType: 'AUTH',
+        entityId: req.session.roleId,
+        details: { role: req.session.role }
+    });
     req.session.roleId = null;
     req.session.role = null;
     req.session.employeeId = null;

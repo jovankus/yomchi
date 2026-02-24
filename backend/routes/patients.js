@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole, PATIENT_VIEW_ROLES, ADMIN_ROLES } = require('../middleware/auth');
+const { logAudit } = require('../middleware/auditLog');
 
 // RBAC: PERMANENT_DOCTOR and DOCTOR can access patients
 // SENIOR_DOCTOR: Only final reports (separate routes)
@@ -106,6 +107,12 @@ router.post('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     db.run(sql, [first_name, last_name, date_of_birth, phone, email, address,
         place_of_living, education_level, marital_status, occupation, living_with, has_asd ? 1 : 0], function (err) {
             if (err) return res.status(500).json({ error: err.message });
+            logAudit(req, {
+                action: 'CREATE',
+                entityType: 'PATIENT',
+                entityId: this.lastID,
+                details: { first_name, last_name, date_of_birth, phone }
+            });
             res.status(201).json({ message: 'Patient created', id: this.lastID });
         });
 });
@@ -130,6 +137,12 @@ router.put('/:id', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
         place_of_living, education_level, marital_status, occupation, living_with, has_asd ? 1 : 0, id], function (err) {
             if (err) return res.status(500).json({ error: err.message });
             if (this.changes === 0) return res.status(404).json({ message: 'Patient not found' });
+            logAudit(req, {
+                action: 'UPDATE',
+                entityType: 'PATIENT',
+                entityId: parseInt(id),
+                details: { first_name, last_name, date_of_birth, phone }
+            });
             res.json({ message: 'Patient updated' });
         });
 });
@@ -151,6 +164,13 @@ router.delete('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
         if (!patient) {
             return res.status(404).json({ message: 'Patient not found' });
         }
+
+        logAudit(req, {
+            action: 'DELETE',
+            entityType: 'PATIENT',
+            entityId: parseInt(patientId),
+            details: { note: 'Patient and all related records deleted' }
+        });
 
         // Delete all related records first (order matters due to foreign key dependencies)
         const deleteRelated = (table, column = 'patient_id') => new Promise((resolve, reject) => {

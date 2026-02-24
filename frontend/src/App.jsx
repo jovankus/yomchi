@@ -30,6 +30,7 @@ import FinancialEvents from './pages/FinancialEvents';
 import DailySummary from './pages/DailySummary';
 import MonthlyReport from './pages/MonthlyReport';
 import BackupSettings from './pages/BackupSettings';
+import AuditLogs from './pages/AuditLogs';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute, { ADMIN_ROLES, CLINICAL_ROLES, REPORT_ROLES, ALL_ROLES } from './components/RoleProtectedRoute';
 
@@ -113,6 +114,7 @@ function AppRoutes() {
                     <Route path="/daily-summary" element={<AppShell><ErrorBoundary><DailySummary /></ErrorBoundary></AppShell>} />
                     <Route path="/monthly-report" element={<AppShell><ErrorBoundary><MonthlyReport /></ErrorBoundary></AppShell>} />
                     <Route path="/backup-settings" element={<AppShell><ErrorBoundary><BackupSettings /></ErrorBoundary></AppShell>} />
+                    <Route path="/audit-logs" element={<AppShell><ErrorBoundary><AuditLogs /></ErrorBoundary></AppShell>} />
                 </Route>
 
                 {/* Inventory - Admin roles only */}

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole, ADMIN_ROLES } = require('../middleware/auth');
+const { logAudit } = require('../middleware/auditLog');
 
 // ADMIN_ROLES only (SENIOR_DOCTOR, PERMANENT_DOCTOR)
 
@@ -337,6 +338,12 @@ router.post('/', requireAuth, (req, res) => {
         // Return the created event
         db.get('SELECT * FROM financial_events WHERE id = ?', [this.lastID], (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
+            logAudit(req, {
+                action: 'CREATE',
+                entityType: 'FINANCIAL_EVENT',
+                entityId: row.id,
+                details: { event_type, category, amount, description }
+            });
             res.status(201).json({ message: 'Financial event created', financial_event: row });
         });
     });
@@ -372,6 +379,12 @@ router.put('/:id', requireAuth, (req, res) => {
         // Return the updated event
         db.get('SELECT * FROM financial_events WHERE id = ?', [id], (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
+            logAudit(req, {
+                action: 'UPDATE',
+                entityType: 'FINANCIAL_EVENT',
+                entityId: parseInt(id),
+                details: { event_type, category, amount, description }
+            });
             res.json({ message: 'Financial event updated', financial_event: row });
         });
     });
@@ -382,6 +395,12 @@ router.delete('/:id', requireAuth, (req, res) => {
     db.run('DELETE FROM financial_events WHERE id = ?', [req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ message: 'Financial event not found' });
+        logAudit(req, {
+            action: 'DELETE',
+            entityType: 'FINANCIAL_EVENT',
+            entityId: parseInt(req.params.id),
+            details: { note: 'Financial event deleted' }
+        });
         res.json({ message: 'Financial event deleted' });
     });
 });

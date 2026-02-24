@@ -140,6 +140,7 @@ export default function NavBar() {
                                     <DropdownLink to="/financial-events">📋 All Events</DropdownLink>
                                     <div className="border-t border-[var(--border)] my-1"></div>
                                     <DropdownLink to="/backup-settings">💾 Backup</DropdownLink>
+                                    <DropdownLink to="/audit-logs">📝 Activity Log</DropdownLink>
                                 </DropdownMenu>
                             )}
 
@@ -293,6 +294,7 @@ export default function NavBar() {
                             <Link to="/monthly-report" className="block px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:bg-[var(--panel-hover)] hover:text-[var(--text)] ml-2 transition-all" onClick={() => setIsMobileMenuOpen(false)}>Monthly Report</Link>
                             <Link to="/financial-events" className="block px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:bg-[var(--panel-hover)] hover:text-[var(--text)] ml-2 transition-all" onClick={() => setIsMobileMenuOpen(false)}>All Events</Link>
                             <Link to="/backup-settings" className="block px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:bg-[var(--panel-hover)] hover:text-[var(--text)] ml-2 transition-all" onClick={() => setIsMobileMenuOpen(false)}>Backup</Link>
+                            <Link to="/audit-logs" className="block px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:bg-[var(--panel-hover)] hover:text-[var(--text)] ml-2 transition-all" onClick={() => setIsMobileMenuOpen(false)}>📝 Activity Log</Link>
                         </>
                     )}
 

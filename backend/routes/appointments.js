@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole, APPOINTMENT_ROLES } = require('../middleware/auth');
+const { logAudit } = require('../middleware/auditLog');
 
 // RBAC: All roles can access appointments
 // SENIOR_DOCTOR, PERMANENT_DOCTOR, DOCTOR, SECRETARY
@@ -452,6 +453,13 @@ router.post('/', requireAuth, async (req, res) => {
                 try {
                     const incomeEvent = await generateIncomeEvent(createdAppointment);
 
+                    logAudit(req, {
+                        action: 'CREATE',
+                        entityType: 'APPOINTMENT',
+                        entityId: appointmentId,
+                        details: { patient_id, session_type, payment_status, start_at, income: incomeEvent?.amount }
+                    });
+
                     // Also generate doctor cut expense if applicable
                     let doctorCutEvent = null;
                     let secretaryCutEvent = null;
@@ -478,6 +486,12 @@ router.post('/', requireAuth, async (req, res) => {
                     });
                 }
             } else {
+                logAudit(req, {
+                    action: 'CREATE',
+                    entityType: 'APPOINTMENT',
+                    entityId: appointmentId,
+                    details: { patient_id, session_type, payment_status, start_at }
+                });
                 res.status(201).json(createdAppointment);
             }
         });
@@ -617,6 +631,12 @@ router.put('/:id', requireAuth, async (req, res) => {
                             });
                         }
                     } else {
+                        logAudit(req, {
+                            action: 'UPDATE',
+                            entityType: 'APPOINTMENT',
+                            entityId: parseInt(id),
+                            details: { session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus }
+                        });
                         res.json({ message: 'Appointment updated successfully' });
                     }
                 }
@@ -645,6 +665,19 @@ router.delete('/:id', requireAuth, async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ error: 'Appointment not found' });
         }
+
+        // Log before deletion so we capture the data
+        logAudit(req, {
+            action: 'DELETE',
+            entityType: 'APPOINTMENT',
+            entityId: parseInt(id),
+            details: {
+                patient_id: appointment.patient_id,
+                session_type: appointment.session_type,
+                payment_status: appointment.payment_status,
+                start_at: appointment.start_at
+            }
+        });
 
         // Use transaction to ensure atomicity
         if (isProduction && db.pool) {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth, requireRole, ADMIN_ROLES } = require('../middleware/auth');
+const { logAudit } = require('../middleware/auditLog');
 
 // ADMIN_ROLES only (SENIOR_DOCTOR, PERMANENT_DOCTOR)
 
@@ -124,6 +125,12 @@ router.post('/items', requireAuth, (req, res) => {
 
     db.run(sql, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
+        logAudit(req, {
+            action: 'CREATE',
+            entityType: 'INVENTORY_ITEM',
+            entityId: this.lastID,
+            details: { generic_name, brand_name }
+        });
         res.status(201).json({
             id: this.lastID,
             generic_name, brand_name, manufacturer, form, strength_mg, strength_unit, pack_size, barcode,
@@ -147,6 +154,12 @@ router.put('/items/:id', requireAuth, (req, res) => {
     db.run(sql, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ message: 'Item not found' });
+        logAudit(req, {
+            action: 'UPDATE',
+            entityType: 'INVENTORY_ITEM',
+            entityId: parseInt(id),
+            details: { generic_name, brand_name }
+        });
         res.json({ message: 'Item updated' });
     });
 });
@@ -156,6 +169,12 @@ router.delete('/items/:id', requireAuth, (req, res) => {
     db.run('UPDATE inventory_items SET active = 0 WHERE id = ?', [req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ message: 'Item not found' });
+        logAudit(req, {
+            action: 'DELETE',
+            entityType: 'INVENTORY_ITEM',
+            entityId: parseInt(req.params.id),
+            details: { note: 'Item soft-deleted' }
+        });
         res.json({ message: 'Item deleted' });
     });
 });

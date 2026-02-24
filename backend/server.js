@@ -105,6 +105,7 @@ app.use('/integrations', require('./routes/integrations'));
 app.use('/financial-events', require('./routes/financial-events'));
 app.use('/backup', require('./routes/backup'));
 app.use('/payouts', require('./routes/payouts'));
+app.use('/audit-logs', require('./routes/audit-logs'));
 
 app.get('/health', (req, res) => {
   res.json({
@@ -258,7 +259,26 @@ async function runStartupMigrations() {
     { name: 'add_appointment_id_to_notes', sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS appointment_id INTEGER` },
     { name: 'add_changes_since_last_visit', sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS changes_since_last_visit TEXT` },
     { name: 'add_medication_adherence_change', sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS medication_adherence_change TEXT` },
-    { name: 'add_side_effects_change', sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS side_effects_change TEXT` }
+    { name: 'add_side_effects_change', sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS side_effects_change TEXT` },
+    {
+      name: 'create_audit_logs',
+      sql: `
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id SERIAL PRIMARY KEY,
+          action TEXT NOT NULL,
+          entity_type TEXT NOT NULL,
+          entity_id INTEGER,
+          user_role TEXT,
+          user_role_id INTEGER,
+          clinic_id INTEGER,
+          details TEXT,
+          ip_address TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `
+    },
+    { name: 'idx_audit_logs_entity', sql: `CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id)` },
+    { name: 'idx_audit_logs_created', sql: `CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)` }
   ];
 
   console.log('Running startup migrations...');
