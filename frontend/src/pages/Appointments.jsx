@@ -191,8 +191,8 @@ export default function Appointments() {
                             className="hover:shadow-md transition-shadow cursor-pointer hover:border-blue-300 border-2 border-transparent"
                             onClick={() => handleCardClick(appt.id)}
                         >
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                <div className="flex-1 min-w-0">
                                     {/* Patient Name - Primary */}
                                     <div className="text-lg font-bold text-slate-900 mb-1">
                                         {appt.patient_first_name} {appt.patient_last_name}
@@ -211,7 +211,7 @@ export default function Appointments() {
                                     )}
 
                                     {/* Time + Badges Row */}
-                                    <div className="flex items-center gap-3 flex-wrap">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <div className="text-md font-semibold text-blue-700">
                                             🕐 {formatTime(appt.start_at)} - {formatTime(appt.end_at)}
                                         </div>
@@ -248,13 +248,14 @@ export default function Appointments() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex gap-2 flex-wrap justify-end ml-4">
+                                <div className="flex gap-2 flex-wrap sm:justify-end sm:ml-4">
                                     {/* Mark Paid button - only show if not already PAID */}
                                     {appt.payment_status !== 'PAID' && (
                                         <Button
                                             size="sm"
                                             onClick={(e) => handleMarkPaid(appt, e)}
                                             disabled={actionLoading === appt.id}
+                                            className="flex-1 sm:flex-none"
                                         >
                                             {actionLoading === appt.id ? '...' : '💰 Mark Paid'}
                                         </Button>
@@ -266,6 +267,7 @@ export default function Appointments() {
                                             e.stopPropagation();
                                             navigate(`/appointments/${appt.id}`);
                                         }}
+                                        className="flex-1 sm:flex-none"
                                     >
                                         Edit
                                     </Button>
@@ -273,6 +275,7 @@ export default function Appointments() {
                                         variant="danger"
                                         size="sm"
                                         onClick={(e) => handleDelete(appt.id, e)}
+                                        className="flex-1 sm:flex-none"
                                     >
                                         Delete
                                     </Button>

@@ -77,12 +77,12 @@ export default function Dashboard() {
             }
 
             // Fetch patients count
-            const patientsRes = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include', headers: getAuthHeaders() });
+            const patientsRes = await fetch(`${API_BASE_URL}/patients/count`, { credentials: 'include', headers: getAuthHeaders() });
             if (patientsRes.ok) {
                 const data = await patientsRes.json();
                 setStats(prev => ({
                     ...prev,
-                    patientsCount: (data.patients || []).length
+                    patientsCount: data.count || 0
                 }));
             }
         } catch (err) {

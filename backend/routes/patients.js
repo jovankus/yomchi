@@ -7,6 +7,14 @@ const { requireAuth, requireRole, PATIENT_VIEW_ROLES, ADMIN_ROLES } = require('.
 // SENIOR_DOCTOR: Only final reports (separate routes)
 // SECRETARY: No patient access
 
+// Get total patients count (for dashboard, accessible to any authenticated user)
+router.get('/count', requireAuth, (req, res) => {
+    db.get('SELECT COUNT(*) as total FROM patients', [], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ count: row.total });
+    });
+});
+
 // List patients with optional search
 router.get('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
     const { search } = req.query;
