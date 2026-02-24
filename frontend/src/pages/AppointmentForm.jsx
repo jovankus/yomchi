@@ -3,7 +3,6 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { createAppointment, updateAppointment } from '../api/appointments';
 import PageTitle from '../components/PageTitle';
 import Card from '../components/Card';
-import { Input } from '../components/Input';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import { API_BASE_URL, getAuthHeaders } from '../api/apiUtils';
@@ -29,8 +28,10 @@ export default function AppointmentForm() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Autocomplete state
-    const [patientSearch, setPatientSearch] = useState('');
+    // Patient fields
+    const [patientName, setPatientName] = useState('');
+    const [patientPhone, setPatientPhone] = useState('');
+    const [patientAge, setPatientAge] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const suggestionsRef = useRef(null);
@@ -40,7 +41,7 @@ export default function AppointmentForm() {
         fetchPatients();
     }, []);
 
-    // Close suggestions when clicking outside
+    // Close suggestions on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (suggestionsRef.current && !suggestionsRef.current.contains(e.target) &&
@@ -52,6 +53,7 @@ export default function AppointmentForm() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Load appointment data in edit mode
     useEffect(() => {
         if (isEditMode) {
             fetch(`${API_BASE_URL}/appointments/${id}`, { credentials: 'include', headers: getAuthHeaders() })
@@ -70,12 +72,13 @@ export default function AppointmentForm() {
                         doctor_cut_percent: data.doctor_cut_percent || '',
                         doctor_involved: data.doctor_involved !== 0
                     });
-                    // Set patient info for edit mode
                     if (data.patient_id) {
                         const p = patients.find(pt => pt.id === data.patient_id);
                         if (p) {
                             setSelectedPatient(p);
-                            setPatientSearch(`${p.first_name} ${p.last_name}`);
+                            setPatientName(`${p.first_name} ${p.last_name}`);
+                            setPatientPhone(p.phone || '');
+                            setPatientAge(calculateAge(p.date_of_birth));
                         }
                     }
                 })
@@ -83,14 +86,16 @@ export default function AppointmentForm() {
         }
     }, [id, patients]);
 
-    // If patient_id comes from URL params, pre-fill
+    // Pre-fill from URL params
     useEffect(() => {
         const preselectedId = searchParams.get('patient_id');
         if (preselectedId && patients.length > 0) {
             const p = patients.find(pt => pt.id === parseInt(preselectedId));
             if (p) {
                 setSelectedPatient(p);
-                setPatientSearch(`${p.first_name} ${p.last_name}`);
+                setPatientName(`${p.first_name} ${p.last_name}`);
+                setPatientPhone(p.phone || '');
+                setPatientAge(calculateAge(p.date_of_birth));
                 setFormData(prev => ({ ...prev, patient_id: p.id }));
             }
         }
@@ -108,9 +113,8 @@ export default function AppointmentForm() {
         }
     };
 
-    // Calculate age from DOB
     const calculateAge = (dob) => {
-        if (!dob) return '—';
+        if (!dob) return '';
         const birthDate = new Date(dob);
         const today = new Date();
         let age = today.getFullYear() - birthDate.getFullYear();
@@ -121,28 +125,39 @@ export default function AppointmentForm() {
         return `${age}`;
     };
 
-    // Filter patients based on search input
+    // Convert age to approximate DOB for new patient creation
+    const ageToDob = (age) => {
+        const ageNum = parseInt(age);
+        if (isNaN(ageNum)) return '';
+        const today = new Date();
+        const year = today.getFullYear() - ageNum;
+        return `${year}-01-01`;
+    };
+
+    // Filter patients by name or phone
     const filteredPatients = patients.filter(p => {
-        if (!patientSearch.trim()) return true;
+        if (!patientName.trim()) return true;
         const fullName = `${p.first_name} ${p.last_name}`.toLowerCase();
         const reverseName = `${p.last_name} ${p.first_name}`.toLowerCase();
-        const search = patientSearch.toLowerCase().trim();
+        const search = patientName.toLowerCase().trim();
         return fullName.includes(search) || reverseName.includes(search) ||
             (p.phone && p.phone.includes(search));
     });
 
-    // Handle patient selection from suggestions
     const handleSelectPatient = (patient) => {
         setSelectedPatient(patient);
-        setPatientSearch(`${patient.first_name} ${patient.last_name}`);
+        setPatientName(`${patient.first_name} ${patient.last_name}`);
+        setPatientPhone(patient.phone || '');
+        setPatientAge(calculateAge(patient.date_of_birth));
         setFormData(prev => ({ ...prev, patient_id: patient.id }));
         setShowSuggestions(false);
     };
 
-    // Handle clearing the selected patient
     const handleClearPatient = () => {
         setSelectedPatient(null);
-        setPatientSearch('');
+        setPatientName('');
+        setPatientPhone('');
+        setPatientAge('');
         setFormData(prev => ({ ...prev, patient_id: '' }));
         inputRef.current?.focus();
     };
@@ -153,15 +168,53 @@ export default function AppointmentForm() {
         setSuccess('');
         setLoading(true);
 
-        if (!formData.patient_id) {
-            setError('Please select a patient from the suggestions');
+        if (!patientName.trim()) {
+            setError('Please enter the patient name');
             setLoading(false);
             return;
         }
 
         try {
+            let patientId = formData.patient_id;
+
+            // If no existing patient selected, create a new one
+            if (!patientId) {
+                const nameParts = patientName.trim().split(/\s+/);
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || firstName;
+
+                const newPatient = {
+                    first_name: firstName,
+                    last_name: lastName === firstName ? '' : lastName,
+                    date_of_birth: patientAge ? ageToDob(patientAge) : '2000-01-01',
+                    phone: patientPhone || '',
+                    email: '',
+                    address: '',
+                };
+
+                const res = await fetch(`${API_BASE_URL}/patients`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newPatient)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || errData.message || 'Failed to create patient');
+                }
+
+                const created = await res.json();
+                patientId = created.id || created.patient?.id;
+
+                if (!patientId) {
+                    throw new Error('Failed to get new patient ID');
+                }
+            }
+
+            // Now create/update the appointment
             const payload = {
-                patient_id: parseInt(formData.patient_id),
+                patient_id: parseInt(patientId),
                 start_at: formData.start_at.replace('T', ' ') + ':00',
                 end_at: formData.end_at.replace('T', ' ') + ':00',
                 session_type: formData.session_type,
@@ -190,6 +243,8 @@ export default function AppointmentForm() {
         }
     };
 
+    const isNewPatient = patientName.trim() && !selectedPatient;
+
     return (
         <div className="max-w-2xl">
             <PageTitle
@@ -206,7 +261,7 @@ export default function AppointmentForm() {
                 {success && <Alert variant="success" className="mb-4">{success}</Alert>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Patient Name Autocomplete */}
+                    {/* Patient Name */}
                     <div className="relative">
                         <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
                             Patient Name *
@@ -215,24 +270,26 @@ export default function AppointmentForm() {
                             <input
                                 ref={inputRef}
                                 type="text"
-                                value={patientSearch}
+                                value={patientName}
                                 onChange={(e) => {
-                                    setPatientSearch(e.target.value);
+                                    setPatientName(e.target.value);
                                     setShowSuggestions(true);
                                     if (selectedPatient) {
                                         const currentName = `${selectedPatient.first_name} ${selectedPatient.last_name}`;
                                         if (e.target.value !== currentName) {
                                             setSelectedPatient(null);
                                             setFormData(prev => ({ ...prev, patient_id: '' }));
+                                            setPatientPhone('');
+                                            setPatientAge('');
                                         }
                                     }
                                 }}
                                 onFocus={() => setShowSuggestions(true)}
-                                placeholder="Type patient name to search..."
+                                placeholder="Type patient name..."
                                 className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] transition-colors ${selectedPatient
-                                        ? 'border-green-400 bg-green-50/50 text-[var(--text)]'
-                                        : 'border-[var(--border)] bg-[var(--panel)] text-[var(--text)]'
-                                    }`}
+                                        ? 'border-green-400 bg-green-50/50'
+                                        : 'border-[var(--border)] bg-[var(--panel)]'
+                                    } text-[var(--text)]`}
                                 autoComplete="off"
                             />
                             {selectedPatient && (
@@ -240,90 +297,83 @@ export default function AppointmentForm() {
                                     type="button"
                                     onClick={handleClearPatient}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--panel-hover)] transition-colors"
-                                    title="Clear selection"
+                                    title="Clear"
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             )}
-                            {!selectedPatient && patientSearch && (
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                    <svg className="w-4 h-4 text-[var(--muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </div>
-                            )}
                         </div>
 
-                        {/* Suggestions Dropdown */}
-                        {showSuggestions && !selectedPatient && (
+                        {/* Autocomplete Suggestions */}
+                        {showSuggestions && !selectedPatient && patientName.trim() && filteredPatients.length > 0 && (
                             <div
                                 ref={suggestionsRef}
-                                className="absolute z-50 w-full mt-1 bg-[var(--panel)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                                className="absolute z-50 w-full mt-1 bg-[var(--panel)] border border-[var(--border)] rounded-lg shadow-xl max-h-48 overflow-y-auto"
                             >
-                                {filteredPatients.length === 0 ? (
-                                    <div className="px-4 py-3 text-sm text-[var(--muted)] text-center">
-                                        No patients found matching "{patientSearch}"
-                                    </div>
-                                ) : (
-                                    filteredPatients.slice(0, 15).map(p => (
-                                        <button
-                                            key={p.id}
-                                            type="button"
-                                            onClick={() => handleSelectPatient(p)}
-                                            className="w-full text-left px-4 py-2.5 hover:bg-[var(--panel-hover)] transition-colors border-b border-[var(--border)] last:border-b-0 flex items-center justify-between gap-3"
-                                        >
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm text-[var(--text)] truncate">
-                                                    {p.first_name} {p.last_name}
-                                                </div>
-                                                <div className="text-xs text-[var(--muted)] flex gap-3 mt-0.5">
-                                                    <span>📞 {p.phone || '—'}</span>
-                                                    <span>🎂 {calculateAge(p.date_of_birth)}y</span>
-                                                </div>
+                                {filteredPatients.slice(0, 10).map(p => (
+                                    <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => handleSelectPatient(p)}
+                                        className="w-full text-left px-4 py-2.5 hover:bg-[var(--panel-hover)] transition-colors border-b border-[var(--border)] last:border-b-0 flex items-center justify-between gap-3"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-sm text-[var(--text)]">
+                                                {p.first_name} {p.last_name}
                                             </div>
-                                            <div className="shrink-0 text-xs text-[var(--muted)] bg-[var(--bg-2)] px-2 py-0.5 rounded-full">
-                                                ID: {p.id}
+                                            <div className="text-xs text-[var(--muted)] flex gap-3 mt-0.5">
+                                                <span>📞 {p.phone || '—'}</span>
+                                                <span>Age: {calculateAge(p.date_of_birth) || '—'}</span>
                                             </div>
-                                        </button>
-                                    ))
-                                )}
-                                {filteredPatients.length > 15 && (
-                                    <div className="px-4 py-2 text-xs text-center text-[var(--muted)] bg-[var(--bg-2)]">
-                                        Showing 15 of {filteredPatients.length} results. Type more to narrow down.
-                                    </div>
-                                )}
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         )}
 
                         {selectedPatient && (
                             <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Patient selected
+                                ✓ Existing patient selected
+                            </p>
+                        )}
+                        {isNewPatient && (
+                            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                ➕ New patient — will be created automatically
                             </p>
                         )}
                     </div>
 
-                    {/* Patient Info Display (Phone & Age) */}
-                    {selectedPatient && (
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg">
-                            <div>
-                                <span className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Phone</span>
-                                <p className="text-sm font-medium text-[var(--text)] mt-0.5">
-                                    📞 {selectedPatient.phone || 'Not provided'}
-                                </p>
-                            </div>
-                            <div>
-                                <span className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Age</span>
-                                <p className="text-sm font-medium text-[var(--text)] mt-0.5">
-                                    🎂 {calculateAge(selectedPatient.date_of_birth)} years old
-                                </p>
-                            </div>
+                    {/* Phone Number & Age (always visible, editable) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
+                                Phone Number
+                            </label>
+                            <input
+                                type="tel"
+                                value={patientPhone}
+                                onChange={(e) => setPatientPhone(e.target.value)}
+                                placeholder="Enter phone number"
+                                className="w-full px-3 py-2.5 border border-[var(--border)] bg-[var(--panel)] text-[var(--text)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                            />
                         </div>
-                    )}
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
+                                Age
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                max="150"
+                                value={patientAge}
+                                onChange={(e) => setPatientAge(e.target.value)}
+                                placeholder="Enter age"
+                                className="w-full px-3 py-2.5 border border-[var(--border)] bg-[var(--panel)] text-[var(--text)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                            />
+                        </div>
+                    </div>
 
                     {/* Date/Time */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
