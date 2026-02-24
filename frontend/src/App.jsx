@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import ClinicLogin from './pages/ClinicLogin';
 import NotAuthorized from './pages/NotAuthorized';
 import Dashboard from './pages/Dashboard';
+import Landing from './pages/Landing';
 import Patients from './pages/Patients';
 import PatientForm from './pages/PatientForm';
 import PatientPrintView from './pages/PatientPrintView';
@@ -64,9 +65,12 @@ function AppRoutes() {
 
     return (
         <Routes>
+            {/* Public Landing Page */}
+            <Route path="/" element={<Landing />} />
+
             {/* Clinic login is always accessible */}
             <Route path="/clinic-login" element={
-                clinic ? <Navigate to="/" replace /> : <ClinicLogin />
+                clinic ? <Navigate to="/dashboard" replace /> : <ClinicLogin />
             } />
 
             {/* Not authorized page */}
@@ -104,7 +108,7 @@ function AppRoutes() {
 
                 {/* Accounting + Dashboard - Admin roles only */}
                 <Route element={<RoleProtectedRoute allowedRoles={ADMIN_ROLES} />}>
-                    <Route path="/" element={<AppShell><ErrorBoundary><Dashboard /></ErrorBoundary></AppShell>} />
+                    <Route path="/dashboard" element={<AppShell><ErrorBoundary><Dashboard /></ErrorBoundary></AppShell>} />
                     <Route path="/financial-events" element={<AppShell><ErrorBoundary><FinancialEvents /></ErrorBoundary></AppShell>} />
                     <Route path="/daily-summary" element={<AppShell><ErrorBoundary><DailySummary /></ErrorBoundary></AppShell>} />
                     <Route path="/monthly-report" element={<AppShell><ErrorBoundary><MonthlyReport /></ErrorBoundary></AppShell>} />

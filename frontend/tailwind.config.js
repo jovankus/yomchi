@@ -65,6 +65,27 @@ export default {
                     700: 'var(--dark-700)',
                     600: 'var(--dark-600)',
                 },
+
+                // Yomchi Landing Institutional Violet Theme
+                inst: {
+                    bg: '#0B0613',
+                    panel: '#120A1F',
+                    'panel-secondary': '#190D2B',
+                    border: '#2A1642',
+                    text: '#F1EAFE',
+                    muted: '#B9A9D6',
+                    primary: '#7C3AED',
+                    'primary-hover': '#6D28D9',
+                    ring: 'rgba(124, 58, 237, 0.45)',
+                    success: '#22C55E',
+                    danger: '#EF4444',
+                    warning: '#F59E0B'
+                }
+            },
+            fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+                heading: ['Sora', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace'],
             },
         },
     },

@@ -106,7 +106,7 @@ export default function NavBar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo and Navigation */}
                     <div className="flex items-center gap-6">
-                        <Link to="/" className="flex items-center shrink-0">
+                        <Link to="/dashboard" className="flex items-center shrink-0">
                             <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-700 bg-clip-text text-transparent">
                                 Yomchi Healthcare
                             </span>

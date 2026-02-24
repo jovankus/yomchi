@@ -8,8 +8,10 @@ export default function ProtectedRoute({ allowedRoles }) {
         return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== 'admin') {
-        return <Navigate to="/" replace />; // Or forbidden page
+    // Role check - just ensure they have some valid role matching the structure
+    // Specific role restrictions are handled by RoleProtectedRoute
+    if (!user.role) {
+        return <Navigate to="/not-authorized" replace />;
     }
 
     return <Outlet />;
