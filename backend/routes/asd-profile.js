@@ -23,7 +23,7 @@ router.put('/:id/asd-profile', requireAuth, (req, res) => {
         language_level,
         notes
     } = req.body;
-    const userId = req.session.userId;
+    const userId = req.session.roleId || req.session.employeeId || null;
 
     // Convert boolean to integer for SQLite
     const diagnosedInt = diagnosed ? 1 : 0;

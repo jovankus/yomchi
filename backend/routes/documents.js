@@ -57,7 +57,7 @@ const upload = multer({
 router.post('/:id/documents', requireAuth, upload.single('file'), async (req, res) => {
     const { id } = req.params;
     const { doc_type, doc_date } = req.body;
-    const userId = req.session.userId;
+    const userId = req.session.roleId || req.session.employeeId || null;
 
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });

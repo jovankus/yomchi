@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 router.post('/:id/asd-forms', requireAuth, (req, res) => {
     const { id } = req.params;
     const { form_version, responses_json, summary_text } = req.body;
-    const userId = req.session.userId;
+    const userId = req.session.roleId || req.session.employeeId || null;
 
     if (!responses_json) {
         return res.status(400).json({ error: 'responses_json is required' });

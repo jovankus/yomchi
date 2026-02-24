@@ -23,7 +23,7 @@ router.put('/:id/symptoms', requireAuth, (req, res) => {
         substance_use, sleep_problem, suicidal_ideation, self_harm,
         irritability, attention_problem, notes
     } = req.body;
-    const userId = req.session.userId;
+    const userId = req.session.roleId || req.session.employeeId || null;
 
     // Convert boolean values to integers (SQLite doesn't have native boolean)
     const toInt = (val) => val ? 1 : 0;

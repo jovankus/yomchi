@@ -19,7 +19,7 @@ router.get('/:id/psychiatric-profile', requireAuth, (req, res) => {
 router.put('/:id/psychiatric-profile', requireAuth, (req, res) => {
     const { id } = req.params;
     const { psychiatric_history_text } = req.body;
-    const userId = req.session.userId; // Use session userId instead of req.user.id
+    const userId = req.session.roleId || req.session.employeeId || null; // Use session roleId or employeeId instead of req.user.id
 
     // First check if profile exists
     db.get('SELECT id FROM patient_psychiatric_profile WHERE patient_id = ?', [id], (err, row) => {

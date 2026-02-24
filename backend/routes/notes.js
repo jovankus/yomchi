@@ -14,7 +14,7 @@ router.post('/', requireAuth, (req, res) => {
         medication_adherence_change,
         side_effects_change
     } = req.body;
-    const author_id = req.session.userId;
+    const author_id = req.session.roleId || req.session.employeeId || null;
 
     if (!patient_id || !content) {
         return res.status(400).json({ error: 'Patient and content are required' });
