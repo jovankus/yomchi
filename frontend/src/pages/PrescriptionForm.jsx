@@ -18,6 +18,7 @@ export default function PrescriptionForm() {
     const [patientName, setPatientName] = useState('');
     const [age, setAge] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [diagnosis, setDiagnosis] = useState('');
     const [drugs, setDrugs] = useState('');
 
     useEffect(() => {
@@ -102,6 +103,19 @@ export default function PrescriptionForm() {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Current Diagnosis
+                            </label>
+                            <textarea
+                                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="3"
+                                value={diagnosis}
+                                onChange={(e) => setDiagnosis(e.target.value)}
+                                placeholder="Enter current diagnosis..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Drugs / Prescription
                             </label>
                             <textarea
@@ -128,26 +142,26 @@ export default function PrescriptionForm() {
             {/* Printable: A5 prescription */}
             <div className="print-only">
                 <div className="a5-page">
-                    {/* Date - top left (yellow arrow) */}
+                    {/* Date - left side, same row as name */}
                     <div className="rx-field rx-date" style={{
-                        left: '15mm',
-                        top: '12mm',
+                        left: '8mm',
+                        top: '45mm',
                         textAlign: 'left'
                     }}>
                         {new Date(date).toLocaleDateString('en-GB')}
                     </div>
 
-                    {/* Age - top center (red arrow) */}
+                    {/* Age - center, same row as name */}
                     <div className="rx-field rx-age" style={{
                         left: '74mm',
-                        top: '12mm',
+                        top: '45mm',
                         textAlign: 'center',
                         transform: 'translateX(-50%)'
                     }}>
                         {age}
                     </div>
 
-                    {/* Patient Name - right side */}
+                    {/* Patient Name - right side, same row */}
                     <div className="rx-field rx-name" style={{
                         right: '8mm',
                         top: '45mm',
@@ -157,12 +171,24 @@ export default function PrescriptionForm() {
                         {patientName}
                     </div>
 
-                    {/* Drugs block - positioned at green box area (text only, no box) */}
+                    {/* Current Diagnosis - above drugs */}
+                    {diagnosis && (
+                        <div className="rx-field rx-diagnosis" style={{
+                            left: '22mm',
+                            top: '58mm',
+                            width: '118mm',
+                            fontSize: '14pt'
+                        }}>
+                            <strong>Dx:</strong> {diagnosis}
+                        </div>
+                    )}
+
+                    {/* Drugs block - positioned below diagnosis */}
                     <div className="rx-field rx-drugs" style={{
                         left: '22mm',
-                        top: '70mm',
+                        top: diagnosis ? '75mm' : '65mm',
                         width: '118mm',
-                        height: '120mm',
+                        height: diagnosis ? '115mm' : '125mm',
                         fontSize: '18pt'
                     }}>
                         {drugs}

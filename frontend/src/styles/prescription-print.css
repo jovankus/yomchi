@@ -63,6 +63,13 @@
     font-size: 14pt;
 }
 
+/* Diagnosis field */
+.rx-diagnosis {
+    font-size: 14pt;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
 /* Drugs block */
 .rx-drugs {
     font-size: 14pt;
