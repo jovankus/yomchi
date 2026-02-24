@@ -178,7 +178,81 @@ async function runStartupMigrations() {
   const alterMigrations = [
     { name: 'add_clinician_id', sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS clinician_id INTEGER REFERENCES users(id)` },
     { name: 'add_reference_type', sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_type TEXT` },
-    { name: 'add_reference_id', sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER` }
+    { name: 'add_reference_id', sql: `ALTER TABLE financial_events ADD COLUMN IF NOT EXISTS reference_id INTEGER` },
+    { name: 'add_uploaded_at_to_docs', sql: `ALTER TABLE patient_documents ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP` },
+    { name: 'add_doc_date_to_docs', sql: `ALTER TABLE patient_documents ADD COLUMN IF NOT EXISTS doc_date DATE` },
+    { name: 'fix_psychiatric_profile', sql: `ALTER TABLE patient_psychiatric_profile ADD COLUMN IF NOT EXISTS psychiatric_history_text TEXT` },
+    {
+      name: 'fix_patient_symptoms_schema',
+      sql: `
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'patient_symptoms' AND column_name = 'symptom_name'
+          ) OR NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'patient_symptoms' AND column_name = 'depression'
+          ) THEN
+            DROP TABLE IF EXISTS patient_symptoms CASCADE;
+            CREATE TABLE patient_symptoms (
+              id SERIAL PRIMARY KEY,
+              patient_id INTEGER UNIQUE REFERENCES patients(id),
+              depression INTEGER DEFAULT 0,
+              anxiety INTEGER DEFAULT 0,
+              panic INTEGER DEFAULT 0,
+              ptsd INTEGER DEFAULT 0,
+              ocd INTEGER DEFAULT 0,
+              psychosis INTEGER DEFAULT 0,
+              mania INTEGER DEFAULT 0,
+              substance_use INTEGER DEFAULT 0,
+              sleep_problem INTEGER DEFAULT 0,
+              suicidal_ideation INTEGER DEFAULT 0,
+              self_harm INTEGER DEFAULT 0,
+              irritability INTEGER DEFAULT 0,
+              attention_problem INTEGER DEFAULT 0,
+              notes TEXT,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_by INTEGER
+            );
+          END IF;
+        END $$;
+      `
+    },
+    {
+      name: 'fix_asd_forms_schema',
+      sql: `
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'patient_asd_forms' AND column_name = 'form_type'
+          ) AND NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'patient_asd_forms' AND column_name = 'form_version'
+          ) THEN
+            DROP TABLE IF EXISTS patient_asd_forms CASCADE;
+            CREATE TABLE patient_asd_forms (
+              id SERIAL PRIMARY KEY,
+              patient_id INTEGER REFERENCES patients(id),
+              form_version TEXT DEFAULT 'v1',
+              responses_json TEXT,
+              summary_text TEXT,
+              created_by INTEGER,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          ELSIF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'patient_asd_forms' AND column_name = 'form_version'
+          ) THEN
+            ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS form_version TEXT DEFAULT 'v1';
+            ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS responses_json TEXT;
+            ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS summary_text TEXT;
+            ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS created_by INTEGER;
+          END IF;
+        END $$;
+      `
+    }
   ];
 
   console.log('Running startup migrations...');

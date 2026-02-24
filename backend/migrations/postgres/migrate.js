@@ -364,6 +364,114 @@ const alterMigrations = [
     {
         name: 'add_doc_date_to_patient_documents',
         sql: `ALTER TABLE patient_documents ADD COLUMN IF NOT EXISTS doc_date DATE`
+    },
+
+    // Fix patient_symptoms table - drop old row-per-symptom design and recreate with boolean columns
+    {
+        name: 'fix_patient_symptoms_schema',
+        sql: `
+            DO $$
+            BEGIN
+                -- Check if the table has the old schema (symptom_name column)
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'patient_symptoms' AND column_name = 'symptom_name'
+                ) THEN
+                    -- Drop old table and recreate with correct schema
+                    DROP TABLE IF EXISTS patient_symptoms CASCADE;
+                    CREATE TABLE patient_symptoms (
+                        id SERIAL PRIMARY KEY,
+                        patient_id INTEGER UNIQUE REFERENCES patients(id),
+                        depression INTEGER DEFAULT 0,
+                        anxiety INTEGER DEFAULT 0,
+                        panic INTEGER DEFAULT 0,
+                        ptsd INTEGER DEFAULT 0,
+                        ocd INTEGER DEFAULT 0,
+                        psychosis INTEGER DEFAULT 0,
+                        mania INTEGER DEFAULT 0,
+                        substance_use INTEGER DEFAULT 0,
+                        sleep_problem INTEGER DEFAULT 0,
+                        suicidal_ideation INTEGER DEFAULT 0,
+                        self_harm INTEGER DEFAULT 0,
+                        irritability INTEGER DEFAULT 0,
+                        attention_problem INTEGER DEFAULT 0,
+                        notes TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_by INTEGER
+                    );
+                ELSIF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'patient_symptoms' AND column_name = 'depression'
+                ) THEN
+                    -- Table exists but doesn't have the boolean columns - recreate
+                    DROP TABLE IF EXISTS patient_symptoms CASCADE;
+                    CREATE TABLE patient_symptoms (
+                        id SERIAL PRIMARY KEY,
+                        patient_id INTEGER UNIQUE REFERENCES patients(id),
+                        depression INTEGER DEFAULT 0,
+                        anxiety INTEGER DEFAULT 0,
+                        panic INTEGER DEFAULT 0,
+                        ptsd INTEGER DEFAULT 0,
+                        ocd INTEGER DEFAULT 0,
+                        psychosis INTEGER DEFAULT 0,
+                        mania INTEGER DEFAULT 0,
+                        substance_use INTEGER DEFAULT 0,
+                        sleep_problem INTEGER DEFAULT 0,
+                        suicidal_ideation INTEGER DEFAULT 0,
+                        self_harm INTEGER DEFAULT 0,
+                        irritability INTEGER DEFAULT 0,
+                        attention_problem INTEGER DEFAULT 0,
+                        notes TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_by INTEGER
+                    );
+                END IF;
+            END $$;
+        `
+    },
+
+    // Fix patient_psychiatric_profile - add missing psychiatric_history_text column
+    {
+        name: 'fix_psychiatric_profile_schema',
+        sql: `ALTER TABLE patient_psychiatric_profile ADD COLUMN IF NOT EXISTS psychiatric_history_text TEXT`
+    },
+
+    // Fix patient_asd_forms - add missing columns expected by routes
+    {
+        name: 'fix_asd_forms_schema',
+        sql: `
+            DO $$
+            BEGIN
+                -- Check if old schema (form_type) exists but new schema (form_version) does not
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'patient_asd_forms' AND column_name = 'form_type'
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'patient_asd_forms' AND column_name = 'form_version'
+                ) THEN
+                    -- Drop old table and recreate with correct schema
+                    DROP TABLE IF EXISTS patient_asd_forms CASCADE;
+                    CREATE TABLE patient_asd_forms (
+                        id SERIAL PRIMARY KEY,
+                        patient_id INTEGER REFERENCES patients(id),
+                        form_version TEXT DEFAULT 'v1',
+                        responses_json TEXT,
+                        summary_text TEXT,
+                        created_by INTEGER,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                ELSIF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'patient_asd_forms' AND column_name = 'form_version'
+                ) THEN
+                    ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS form_version TEXT DEFAULT 'v1';
+                    ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS responses_json TEXT;
+                    ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS summary_text TEXT;
+                    ALTER TABLE patient_asd_forms ADD COLUMN IF NOT EXISTS created_by INTEGER;
+                END IF;
+            END $$;
+        `
     }
 ];
 
