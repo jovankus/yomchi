@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { requireAuth, requireRole, PATIENT_VIEW_ROLES, ADMIN_ROLES } = require('../middleware/auth');
+const { requireAuth, requireRole, PATIENT_VIEW_ROLES, ADMIN_ROLES, APPOINTMENT_ROLES } = require('../middleware/auth');
 const { logAudit } = require('../middleware/auditLog');
 
 // RBAC: PERMANENT_DOCTOR and DOCTOR can access patients
 // SENIOR_DOCTOR: Only final reports (separate routes)
-// SECRETARY: No patient access
+// SECRETARY: Can list and create patients (needed for appointment form)
 
 // Get total patients count (for dashboard, accessible to any authenticated user)
 router.get('/count', requireAuth, (req, res) => {
@@ -16,8 +16,8 @@ router.get('/count', requireAuth, (req, res) => {
     });
 });
 
-// List patients with optional search
-router.get('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
+// List patients with optional search (SECRETARY included for appointment form)
+router.get('/', requireRole(APPOINTMENT_ROLES), (req, res) => {
     const { search } = req.query;
     let query = 'SELECT * FROM patients';
     let params = [];
@@ -85,8 +85,8 @@ router.get('/:id/recent-appointments', requireRole(PATIENT_VIEW_ROLES), (req, re
 });
 
 
-// Create patient
-router.post('/', requireRole(PATIENT_VIEW_ROLES), (req, res) => {
+// Create patient (SECRETARY included for appointment form auto-create)
+router.post('/', requireRole(APPOINTMENT_ROLES), (req, res) => {
     const { first_name, last_name, date_of_birth, phone, email, address,
         place_of_living, education_level, marital_status, occupation, living_with, has_asd } = req.body;
 
