@@ -53,14 +53,19 @@ export default function AppointmentForm() {
     }, []);
 
     // Load appointment data in edit mode
+    // Store raw appointment data for edit mode (fetched once)
+    const [editAppointmentData, setEditAppointmentData] = useState(null);
+
+    // Fetch appointment data once in edit mode
     useEffect(() => {
-        if (isEditMode) {
+        if (isEditMode && !editAppointmentData) {
             fetch(`${API_BASE_URL}/appointments/${id}`, { credentials: 'include', headers: getAuthHeaders() })
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to fetch appointment');
                     return res.json();
                 })
                 .then(data => {
+                    setEditAppointmentData(data);
                     setFormData({
                         patient_id: data.patient_id || '',
                         start_at: data.start_at ? data.start_at.replace(' ', 'T').slice(0, 16) : '',
@@ -70,19 +75,23 @@ export default function AppointmentForm() {
                         free_return_reason: data.free_return_reason || '',
                         doctor_involvement_mode: data.doctor_involvement_mode || 'AUTO'
                     });
-                    if (data.patient_id) {
-                        const p = patients.find(pt => pt.id === data.patient_id);
-                        if (p) {
-                            setSelectedPatient(p);
-                            setPatientName(`${p.first_name} ${p.last_name}`);
-                            setPatientPhone(p.phone || '');
-                            setPatientAge(calculateAge(p.date_of_birth));
-                        }
-                    }
                 })
                 .catch(err => setError(err.message));
         }
-    }, [id, patients]);
+    }, [id, isEditMode]);
+
+    // Resolve patient info once both appointment data AND patients list are available
+    useEffect(() => {
+        if (editAppointmentData && patients.length > 0 && editAppointmentData.patient_id) {
+            const p = patients.find(pt => pt.id === editAppointmentData.patient_id);
+            if (p) {
+                setSelectedPatient(p);
+                setPatientName(`${p.first_name} ${p.last_name}`);
+                setPatientPhone(p.phone || '');
+                setPatientAge(calculateAge(p.date_of_birth));
+            }
+        }
+    }, [editAppointmentData, patients]);
 
     // Pre-fill from URL params
     useEffect(() => {
