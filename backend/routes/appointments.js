@@ -248,6 +248,37 @@ const generateDoctorCutExpense = (appointment, incomeAmount) => {
     });
 };
 
+// Helper to delete existing doctor cut expense for an appointment
+const deleteExistingDoctorCut = (appointmentId) => {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `DELETE FROM financial_events WHERE category = 'DOCTOR_CUT' AND reference_type = 'APPOINTMENT' AND reference_id = ?`,
+            [appointmentId],
+            function (err) {
+                if (err) reject(err);
+                else {
+                    console.log(`[DOCTOR CUT] Deleted ${this.changes} existing doctor cut event(s) for appointment #${appointmentId}`);
+                    resolve(this.changes);
+                }
+            }
+        );
+    });
+};
+
+// Helper to get the existing income amount for an appointment
+const getExistingIncomeAmount = (appointmentId) => {
+    return new Promise((resolve, reject) => {
+        db.get(
+            `SELECT amount FROM financial_events WHERE event_type = 'INCOME' AND reference_type = 'APPOINTMENT' AND reference_id = ?`,
+            [appointmentId],
+            (err, row) => {
+                if (err) reject(err);
+                else resolve(row ? row.amount : null);
+            }
+        );
+    });
+};
+
 // Helper to generate online secretary cut for ONLINE PAID appointments
 // Returns the created financial_event or null if not applicable
 const generateOnlineSecretaryCut = (appointment, incomeAmount) => {
@@ -648,13 +679,66 @@ router.put('/:id', requireAuth, async (req, res) => {
                             });
                         }
                     } else {
-                        logAudit(req, {
-                            action: 'UPDATE',
-                            entityType: 'APPOINTMENT',
-                            entityId: parseInt(id),
-                            details: { session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus, doctor_involvement_mode: newDoctorInvolvementMode }
-                        });
-                        res.json({ message: 'Appointment updated successfully' });
+                        // Check if doctor involvement mode changed on an already-PAID appointment
+                        const oldMode = appointment.doctor_involvement_mode || 'AUTO';
+                        const modeChanged = newDoctorInvolvementMode !== oldMode;
+                        const alreadyPaid = appointment.payment_status === 'PAID' && newPaymentStatus === 'PAID';
+
+                        if (modeChanged && alreadyPaid) {
+                            try {
+                                // Delete old doctor cut and regenerate with new percentage
+                                await deleteExistingDoctorCut(id);
+
+                                const incomeAmount = await getExistingIncomeAmount(id);
+                                let doctorCutEvent = null;
+                                if (incomeAmount && newDoctorCutPercent) {
+                                    const updatedAppointment = {
+                                        id: parseInt(id),
+                                        patient_id: appointment.patient_id,
+                                        start_at: newStart,
+                                        session_type: newSessionType,
+                                        payment_status: newPaymentStatus,
+                                        doctor_cut_percent: newDoctorCutPercent,
+                                        doctor_involved: newDoctorInvolved
+                                    };
+                                    doctorCutEvent = await generateDoctorCutExpense(updatedAppointment, incomeAmount);
+                                }
+
+                                console.log(`[DOCTOR CUT] Mode changed ${oldMode} → ${newDoctorInvolvementMode} for appointment #${id}. New cut: ${newDoctorCutPercent}%`);
+
+                                logAudit(req, {
+                                    action: 'UPDATE',
+                                    entityType: 'APPOINTMENT',
+                                    entityId: parseInt(id),
+                                    details: {
+                                        session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus,
+                                        doctor_involvement_mode: newDoctorInvolvementMode,
+                                        doctor_mode_changed_from: oldMode,
+                                        doctor_cut_regenerated: true
+                                    }
+                                });
+                                res.json({
+                                    message: 'Appointment updated successfully',
+                                    doctor_cut_regenerated: true,
+                                    doctor_cut_generated: doctorCutEvent ? doctorCutEvent.amount : null,
+                                    doctor_cut_event_id: doctorCutEvent ? doctorCutEvent.id : null
+                                });
+                            } catch (cutErr) {
+                                console.error('Error regenerating doctor cut:', cutErr);
+                                res.json({
+                                    message: 'Appointment updated successfully',
+                                    doctor_cut_regeneration_error: 'Failed to regenerate doctor cut'
+                                });
+                            }
+                        } else {
+                            logAudit(req, {
+                                action: 'UPDATE',
+                                entityType: 'APPOINTMENT',
+                                entityId: parseInt(id),
+                                details: { session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus, doctor_involvement_mode: newDoctorInvolvementMode }
+                            });
+                            res.json({ message: 'Appointment updated successfully' });
+                        }
                     }
                 }
             );
@@ -880,6 +964,9 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
                 newDoctorCutPercent = resolved.doctor_cut_percent;
             } else if (effectiveMode === 'NOT_INVOLVED') {
                 newDoctorCutPercent = null;
+            } else if (effectiveMode !== (appointment.doctor_involvement_mode || 'AUTO')) {
+                // Mode changed on already-PAID — update the percentage
+                newDoctorCutPercent = resolved.doctor_cut_percent;
             }
 
             // Update the appointment
@@ -940,6 +1027,41 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
                         } catch (incomeErr) {
                             console.error('Error generating financial events:', incomeErr);
                             responseData.financial_generation_error = 'Failed to generate financial events';
+                        }
+                    }
+
+                    // Check if doctor involvement mode changed on an already-PAID appointment
+                    const oldMode = appointment.doctor_involvement_mode || 'AUTO';
+                    const modeChanged = effectiveMode !== oldMode;
+                    const alreadyPaid = appointment.payment_status === 'PAID' && newPaymentStatus === 'PAID';
+
+                    if (!changedToPaid && modeChanged && alreadyPaid) {
+                        try {
+                            await deleteExistingDoctorCut(id);
+
+                            const incomeAmount = await getExistingIncomeAmount(id);
+                            if (incomeAmount && newDoctorCutPercent) {
+                                const updatedAppointment = {
+                                    id: parseInt(id),
+                                    patient_id: appointment.patient_id,
+                                    start_at: appointment.start_at,
+                                    session_type: newSessionType,
+                                    payment_status: newPaymentStatus,
+                                    doctor_cut_percent: newDoctorCutPercent,
+                                    doctor_involved: newDoctorInvolved
+                                };
+                                const doctorCutEvent = await generateDoctorCutExpense(updatedAppointment, incomeAmount);
+                                responseData.doctor_cut_regenerated = true;
+                                responseData.doctor_cut_generated = doctorCutEvent ? doctorCutEvent.amount : null;
+                                responseData.doctor_cut_event_id = doctorCutEvent ? doctorCutEvent.id : null;
+                            } else {
+                                responseData.doctor_cut_regenerated = true;
+                                responseData.doctor_cut_generated = null;
+                            }
+                            console.log(`[DOCTOR CUT] PATCH: Mode changed ${oldMode} → ${effectiveMode} for appointment #${id}. New cut: ${newDoctorCutPercent}%`);
+                        } catch (cutErr) {
+                            console.error('Error regenerating doctor cut:', cutErr);
+                            responseData.doctor_cut_regeneration_error = 'Failed to regenerate doctor cut';
                         }
                     }
 
