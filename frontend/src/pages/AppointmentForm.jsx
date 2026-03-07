@@ -21,8 +21,7 @@ export default function AppointmentForm() {
         session_type: 'IN_CLINIC',
         payment_status: 'UNPAID',
         free_return_reason: '',
-        doctor_cut_percent: '',
-        doctor_involved: true
+        doctor_involvement_mode: 'AUTO'
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -69,8 +68,7 @@ export default function AppointmentForm() {
                         session_type: data.session_type || 'IN_CLINIC',
                         payment_status: data.payment_status || 'UNPAID',
                         free_return_reason: data.free_return_reason || '',
-                        doctor_cut_percent: data.doctor_cut_percent || '',
-                        doctor_involved: data.doctor_involved !== 0
+                        doctor_involvement_mode: data.doctor_involvement_mode || 'AUTO'
                     });
                     if (data.patient_id) {
                         const p = patients.find(pt => pt.id === data.patient_id);
@@ -220,8 +218,7 @@ export default function AppointmentForm() {
                 session_type: formData.session_type,
                 payment_status: formData.payment_status,
                 free_return_reason: formData.payment_status === 'FREE_RETURN' ? formData.free_return_reason : null,
-                doctor_cut_percent: formData.doctor_cut_percent ? parseFloat(formData.doctor_cut_percent) : null,
-                doctor_involved: formData.doctor_involved
+                doctor_involvement_mode: formData.doctor_involvement_mode
             };
 
             if (isEditMode) {
@@ -287,8 +284,8 @@ export default function AppointmentForm() {
                                 onFocus={() => setShowSuggestions(true)}
                                 placeholder="Type patient name..."
                                 className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] transition-colors ${selectedPatient
-                                        ? 'border-green-400 bg-green-50/50'
-                                        : 'border-[var(--border)] bg-[var(--panel)]'
+                                    ? 'border-green-400 bg-green-50/50'
+                                    : 'border-[var(--border)] bg-[var(--panel)]'
                                     } text-[var(--text)]`}
                                 autoComplete="off"
                             />
@@ -469,44 +466,37 @@ export default function AppointmentForm() {
                         </div>
                     )}
 
-                    {/* Doctor Cut Settings (ONLINE only) */}
+                    {/* Doctor Involvement Mode */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
+                            Doctor Involvement
+                        </label>
+                        <select
+                            value={formData.doctor_involvement_mode}
+                            onChange={(e) => setFormData({ ...formData, doctor_involvement_mode: e.target.value })}
+                            className="w-full px-3 py-2 border border-[var(--border)] bg-[var(--panel)] text-[var(--text)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                        >
+                            <option value="AUTO">🤖 Auto (System Default)</option>
+                            <option value="20">💊 20% Doctor Cut</option>
+                            <option value="10">💊 10% Doctor Cut</option>
+                            <option value="NOT_INVOLVED">🚫 Not Involved</option>
+                        </select>
+                        <p className="text-xs text-[var(--muted)] mt-1">
+                            {formData.doctor_involvement_mode === 'AUTO'
+                                ? '💡 Auto: First paid visit = 20%, subsequent visits = 10%'
+                                : formData.doctor_involvement_mode === 'NOT_INVOLVED'
+                                    ? '🚫 Doctor will not receive any cut for this appointment'
+                                    : `💊 Doctor cut is manually set to ${formData.doctor_involvement_mode}%`
+                            }
+                        </p>
+                    </div>
+
+                    {/* Info Notes */}
                     {formData.session_type === 'ONLINE' && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h4 className="text-sm font-medium text-slate-900 mb-3">Online Session Settings</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                                        Doctor Cut %
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="10"
-                                        max="20"
-                                        value={formData.doctor_cut_percent}
-                                        onChange={(e) => setFormData({ ...formData, doctor_cut_percent: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="10-20"
-                                    />
-                                </div>
-                                <div className="flex items-end pb-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.doctor_involved}
-                                            onChange={(e) => setFormData({ ...formData, doctor_involved: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 border-slate-300 rounded"
-                                        />
-                                        <span className="text-sm font-medium text-slate-900">Doctor Involved</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <p className="text-xs text-blue-700 mt-2">
-                                💡 Online sessions: 20,000 IQD income. Doctor cut applies if specified.
-                            </p>
+                        <div className="text-sm text-[var(--muted)] p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            💡 Online sessions: 20,000 IQD income.
                         </div>
                     )}
-
-                    {/* Info Note */}
                     {formData.session_type === 'IN_CLINIC' && (
                         <div className="text-sm text-[var(--muted)] p-3 bg-[var(--bg-2)] rounded-lg">
                             💡 In-clinic sessions: 15,000 IQD income. Available on Sat, Sun, Tue, Wed.

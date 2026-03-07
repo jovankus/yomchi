@@ -242,7 +242,16 @@ export default function Appointments() {
                                         </span>
                                     </div>
 
-                                    {appt.doctor_cut_percent && (
+                                    {appt.doctor_involvement_mode && (
+                                        <div className="text-sm text-slate-500 mt-2">
+                                            {appt.doctor_involvement_mode === 'AUTO'
+                                                ? `🤖 Doctor: Auto${appt.doctor_cut_percent ? ` (${appt.doctor_cut_percent}%)` : ''}`
+                                                : appt.doctor_involvement_mode === 'NOT_INVOLVED'
+                                                    ? '🚫 Doctor: Not Involved'
+                                                    : `💊 Doctor: ${appt.doctor_involvement_mode}%`}
+                                        </div>
+                                    )}
+                                    {!appt.doctor_involvement_mode && appt.doctor_cut_percent && (
                                         <div className="text-sm text-slate-500 mt-2">
                                             Doctor Cut: {appt.doctor_cut_percent}%
                                         </div>

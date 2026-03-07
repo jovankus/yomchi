@@ -490,6 +490,16 @@ const alterMigrations = [
     {
         name: 'add_side_effects_change',
         sql: `ALTER TABLE clinical_notes ADD COLUMN IF NOT EXISTS side_effects_change TEXT`
+    },
+
+    // 030 - Add doctor_involvement_mode to appointments
+    {
+        name: 'add_doctor_involvement_mode',
+        sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS doctor_involvement_mode TEXT DEFAULT 'AUTO'`
+    },
+    {
+        name: 'backfill_doctor_involvement_mode',
+        sql: `UPDATE appointments SET doctor_involvement_mode = 'NOT_INVOLVED' WHERE doctor_involved = 0 AND (doctor_involvement_mode IS NULL OR doctor_involvement_mode = 'AUTO')`
     }
 ];
 

@@ -7,20 +7,19 @@ const { logAudit } = require('../middleware/auditLog');
 // RBAC: All roles can access appointments
 // SENIOR_DOCTOR, PERMANENT_DOCTOR, DOCTOR, SECRETARY
 
-// Helper to check for conflicts
-// Returns true if conflict found
-const checkConflict = (clinicianId, startAt, endAt, excludeId = null) => {
+// Helper to check for conflicts (global — no clinician filter)
+// Returns true if ANY non-cancelled appointment overlaps the given time range
+const checkConflict = (startAt, endAt, excludeId = null) => {
     return new Promise((resolve, reject) => {
         let query = `
             SELECT COUNT(*) as count 
             FROM appointments 
-            WHERE clinician_id = ? 
-            AND status != 'cancelled'
+            WHERE status != 'cancelled'
             AND (
                 (start_at < ? AND end_at > ?)
             )
         `;
-        let params = [clinicianId, endAt, startAt];
+        let params = [endAt, startAt];
 
         if (excludeId) {
             query += ` AND id != ?`;
@@ -344,9 +343,31 @@ router.get('/', requireAuth, (req, res) => {
     });
 });
 
+// Helper to resolve doctor involvement mode into cut percent and involved flag
+const resolveDoctorInvolvement = async (mode, patientId, excludeAppointmentId = null) => {
+    const VALID_MODES = ['AUTO', '20', '10', 'NOT_INVOLVED'];
+    const effectiveMode = VALID_MODES.includes(mode) ? mode : 'AUTO';
+
+    switch (effectiveMode) {
+        case '20':
+            return { doctor_cut_percent: 20, doctor_involved: true, mode: '20' };
+        case '10':
+            return { doctor_cut_percent: 10, doctor_involved: true, mode: '10' };
+        case 'NOT_INVOLVED':
+            return { doctor_cut_percent: null, doctor_involved: false, mode: 'NOT_INVOLVED' };
+        case 'AUTO':
+        default: {
+            const paidVisitCount = await getPatientPaidVisitCount(patientId, excludeAppointmentId);
+            const cutPercent = computeDoctorCutPercent(paidVisitCount);
+            console.log(`[DOCTOR CUT] AUTO mode — Patient ${patientId} has ${paidVisitCount} prior PAID visits → ${cutPercent}%`);
+            return { doctor_cut_percent: cutPercent, doctor_involved: true, mode: 'AUTO' };
+        }
+    }
+};
+
 // POST /appointments
 router.post('/', requireAuth, async (req, res) => {
-    const { patient_id, start_at, end_at, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_cut_override, doctor_involved } = req.body;
+    const { patient_id, start_at, end_at, session_type, payment_status, free_return_reason, doctor_involvement_mode, doctor_cut_percent, doctor_cut_override, doctor_involved } = req.body;
     // Use roleId since this is a role-based system, not individual user accounts
     const clinician_id = req.session.roleId || null;
 
@@ -380,13 +401,6 @@ router.post('/', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'payment_status must be PAID, UNPAID, or FREE_RETURN' });
     }
 
-    // Validate doctor_cut_percent if override is explicitly requested
-    if (doctor_cut_override && doctor_cut_percent !== undefined && doctor_cut_percent !== null) {
-        if (typeof doctor_cut_percent !== 'number' || doctor_cut_percent < 10 || doctor_cut_percent > 20) {
-            return res.status(400).json({ error: 'doctor_cut_percent must be a number between 10 and 20' });
-        }
-    }
-
     if (new Date(start_at) >= new Date(end_at)) {
         return res.status(400).json({ error: 'Start time must be before end time' });
     }
@@ -400,34 +414,40 @@ router.post('/', requireAuth, async (req, res) => {
             }
         }
 
-        const hasConflict = await checkConflict(clinician_id, start_at, end_at);
+        // Global overlap check (all appointments, not just per-clinician)
+        const hasConflict = await checkConflict(start_at, end_at);
         if (hasConflict) {
             return res.status(409).json({ message: 'Appointment overlaps with an existing one.' });
         }
 
-        // Auto-compute doctor cut percent for PAID appointments
+        // Resolve doctor involvement from mode or legacy fields
+        const effectiveMode = doctor_involvement_mode || 'AUTO';
         let finalDoctorCutPercent = null;
+        let finalDoctorInvolved = true;
+        let finalMode = effectiveMode;
         let isAutoComputed = false;
+
         if (payment_status === 'PAID') {
-            if (doctor_cut_override && doctor_cut_percent) {
-                // Use manually specified override
-                finalDoctorCutPercent = doctor_cut_percent;
-                console.log(`[DOCTOR CUT] Using override: ${finalDoctorCutPercent}%`);
-            } else {
-                // Auto-compute based on patient's paid visit count
-                const paidVisitCount = await getPatientPaidVisitCount(patient_id);
-                console.log(`[DOCTOR CUT] Patient ${patient_id} has ${paidVisitCount} prior PAID visits`);
-                finalDoctorCutPercent = computeDoctorCutPercent(paidVisitCount);
-                console.log(`[DOCTOR CUT] Computed cut: ${finalDoctorCutPercent}% (first visit = 20%, subsequent = 10%)`);
-                isAutoComputed = true;
+            // Use the new mode system
+            const resolved = await resolveDoctorInvolvement(effectiveMode, patient_id);
+            finalDoctorCutPercent = resolved.doctor_cut_percent;
+            finalDoctorInvolved = resolved.doctor_involved;
+            finalMode = resolved.mode;
+            isAutoComputed = (resolved.mode === 'AUTO');
+            console.log(`[DOCTOR CUT] Mode ${finalMode}: cut=${finalDoctorCutPercent}%, involved=${finalDoctorInvolved}`);
+        } else {
+            // Not PAID — still store the mode but no cut
+            if (effectiveMode === 'NOT_INVOLVED') {
+                finalDoctorInvolved = false;
+                finalMode = 'NOT_INVOLVED';
             }
         }
 
         const insertSql = `
-            INSERT INTO appointments (patient_id, clinician_id, start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_involved)
-            VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?)
+            INSERT INTO appointments (patient_id, clinician_id, start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_involved, doctor_involvement_mode)
+            VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?)
         `;
-        const params = [patient_id, clinician_id, start_at, end_at, session_type, payment_status, free_return_reason || null, finalDoctorCutPercent, doctor_involved !== undefined ? (doctor_involved ? 1 : 0) : 1];
+        const params = [patient_id, clinician_id, start_at, end_at, session_type, payment_status, free_return_reason || null, finalDoctorCutPercent, finalDoctorInvolved ? 1 : 0, finalMode];
 
         db.run(insertSql, params, async function (err) {
             if (err) return res.status(500).json({ error: err.message });
@@ -445,7 +465,8 @@ router.post('/', requireAuth, async (req, res) => {
                 free_return_reason: free_return_reason || null,
                 doctor_cut_percent: finalDoctorCutPercent,
                 doctor_cut_auto_computed: isAutoComputed,
-                doctor_involved: doctor_involved !== undefined ? doctor_involved : true
+                doctor_involved: finalDoctorInvolved,
+                doctor_involvement_mode: finalMode
             };
 
             // Auto-generate income event if PAID
@@ -457,7 +478,7 @@ router.post('/', requireAuth, async (req, res) => {
                         action: 'CREATE',
                         entityType: 'APPOINTMENT',
                         entityId: appointmentId,
-                        details: { patient_id, session_type, payment_status, start_at, income: incomeEvent?.amount }
+                        details: { patient_id, session_type, payment_status, start_at, income: incomeEvent?.amount, doctor_involvement_mode: finalMode }
                     });
 
                     // Also generate doctor cut expense if applicable
@@ -490,7 +511,7 @@ router.post('/', requireAuth, async (req, res) => {
                     action: 'CREATE',
                     entityType: 'APPOINTMENT',
                     entityId: appointmentId,
-                    details: { patient_id, session_type, payment_status, start_at }
+                    details: { patient_id, session_type, payment_status, start_at, doctor_involvement_mode: finalMode }
                 });
                 res.status(201).json(createdAppointment);
             }
@@ -504,7 +525,7 @@ router.post('/', requireAuth, async (req, res) => {
 // PUT /appointments/:id
 router.put('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const { start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_involved } = req.body;
+    const { start_at, end_at, status, session_type, payment_status, free_return_reason, doctor_involvement_mode, doctor_cut_percent, doctor_involved } = req.body;
     // Use roleId since this is a role-based system
     const clinician_id = req.session.roleId || null;
 
@@ -521,8 +542,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         const newSessionType = session_type || appointment.session_type;
         const newPaymentStatus = payment_status || appointment.payment_status;
         const newFreeReturnReason = free_return_reason !== undefined ? free_return_reason : appointment.free_return_reason;
-        const newDoctorCutPercent = doctor_cut_percent !== undefined ? doctor_cut_percent : appointment.doctor_cut_percent;
-        const newDoctorInvolved = doctor_involved !== undefined ? doctor_involved : appointment.doctor_involved;
+        const newDoctorInvolvementMode = doctor_involvement_mode || appointment.doctor_involvement_mode || 'AUTO';
 
         // Validate session_type if provided
         if (session_type && !['IN_CLINIC', 'ONLINE'].includes(session_type)) {
@@ -534,15 +554,7 @@ router.put('/:id', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'payment_status must be PAID, UNPAID, or FREE_RETURN' });
         }
 
-        // Validate doctor_cut_percent if provided
-        if (doctor_cut_percent !== undefined && doctor_cut_percent !== null) {
-            if (typeof doctor_cut_percent < 10 || doctor_cut_percent > 20) {
-                return res.status(400).json({ error: 'doctor_cut_percent must be a number between 10 and 20' });
-            }
-        }
-
         // Validate clinic schedule for IN_CLINIC sessions
-        // Check if changing TO IN_CLINIC or changing date for existing IN_CLINIC
         if (newSessionType === 'IN_CLINIC') {
             if (!isClinicOpenDay(newStart)) {
                 const dayName = getDayName(newStart);
@@ -565,19 +577,24 @@ router.put('/:id', requireAuth, async (req, res) => {
                 }
             }
 
-            // Only check conflict if time changed
+            // Global overlap check if time changed
             if (start_at || end_at) {
-                const hasConflict = await checkConflict(clinician_id, newStart, newEnd, id);
+                const hasConflict = await checkConflict(newStart, newEnd, id);
                 if (hasConflict) {
                     return res.status(409).json({ message: 'Appointment overlaps with an existing one.' });
                 }
             }
 
+            // Resolve doctor involvement
+            const resolved = await resolveDoctorInvolvement(newDoctorInvolvementMode, appointment.patient_id, id);
+            const newDoctorCutPercent = newPaymentStatus === 'PAID' ? resolved.doctor_cut_percent : (resolved.mode === 'NOT_INVOLVED' ? null : appointment.doctor_cut_percent);
+            const newDoctorInvolved = resolved.doctor_involved;
+
             db.run(
                 `UPDATE appointments 
-                 SET start_at = ?, end_at = ?, status = ?, session_type = ?, payment_status = ?, free_return_reason = ?, doctor_cut_percent = ?, doctor_involved = ?
+                 SET start_at = ?, end_at = ?, status = ?, session_type = ?, payment_status = ?, free_return_reason = ?, doctor_cut_percent = ?, doctor_involved = ?, doctor_involvement_mode = ?
                  WHERE id = ?`,
-                [newStart, newEnd, newStatus, newSessionType, newPaymentStatus, newFreeReturnReason, newDoctorCutPercent, newDoctorInvolved ? 1 : 0, id],
+                [newStart, newEnd, newStatus, newSessionType, newPaymentStatus, newFreeReturnReason, newDoctorCutPercent, newDoctorInvolved ? 1 : 0, newDoctorInvolvementMode, id],
                 async function (err) {
                     if (err) return res.status(500).json({ error: err.message });
 
@@ -635,7 +652,7 @@ router.put('/:id', requireAuth, async (req, res) => {
                             action: 'UPDATE',
                             entityType: 'APPOINTMENT',
                             entityId: parseInt(id),
-                            details: { session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus }
+                            details: { session_type: newSessionType, payment_status: newPaymentStatus, status: newStatus, doctor_involvement_mode: newDoctorInvolvementMode }
                         });
                         res.json({ message: 'Appointment updated successfully' });
                     }
@@ -816,7 +833,7 @@ router.get('/:id/income', requireAuth, (req, res) => {
 // PATCH /appointments/:id/payment - Lightweight payment status update
 router.patch('/:id/payment', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const { session_type, payment_status, free_return_reason, doctor_cut_percent, doctor_cut_override, doctor_involved } = req.body;
+    const { session_type, payment_status, free_return_reason, doctor_involvement_mode } = req.body;
 
     // Fetch existing appointment
     db.get('SELECT * FROM appointments WHERE id = ?', [id], async (err, appointment) => {
@@ -829,7 +846,7 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
         const newSessionType = session_type || appointment.session_type;
         const newPaymentStatus = payment_status || appointment.payment_status;
         const newFreeReturnReason = free_return_reason !== undefined ? free_return_reason : appointment.free_return_reason;
-        const newDoctorInvolved = doctor_involved !== undefined ? doctor_involved : appointment.doctor_involved;
+        const effectiveMode = doctor_involvement_mode || appointment.doctor_involvement_mode || 'AUTO';
 
         // Validate session_type if provided
         if (session_type && !['IN_CLINIC', 'ONLINE'].includes(session_type)) {
@@ -839,13 +856,6 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
         // Validate payment_status if provided
         if (payment_status && !['PAID', 'UNPAID', 'FREE_RETURN'].includes(payment_status)) {
             return res.status(400).json({ error: 'payment_status must be PAID, UNPAID, or FREE_RETURN' });
-        }
-
-        // Validate doctor_cut_percent if override is explicitly requested
-        if (doctor_cut_override && doctor_cut_percent !== undefined && doctor_cut_percent !== null) {
-            if (typeof doctor_cut_percent !== 'number' || doctor_cut_percent < 10 || doctor_cut_percent > 20) {
-                return res.status(400).json({ error: 'doctor_cut_percent must be a number between 10 and 20' });
-            }
         }
 
         try {
@@ -860,36 +870,26 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
                 }
             }
 
-            // Auto-compute doctor cut percent when changing to PAID
-            let newDoctorCutPercent = appointment.doctor_cut_percent;
-            let isAutoComputed = false;
+            // Resolve doctor involvement using the mode
             const changedToPaid = payment_status === 'PAID' && appointment.payment_status !== 'PAID';
+            const resolved = await resolveDoctorInvolvement(effectiveMode, appointment.patient_id, id);
+            let newDoctorCutPercent = appointment.doctor_cut_percent;
+            const newDoctorInvolved = resolved.doctor_involved;
 
             if (changedToPaid) {
-                if (doctor_cut_override && doctor_cut_percent) {
-                    // Use manually specified override
-                    newDoctorCutPercent = doctor_cut_percent;
-                } else {
-                    // Auto-compute based on patient's paid visit count (excluding this appointment)
-                    const paidVisitCount = await getPatientPaidVisitCount(appointment.patient_id, id);
-                    newDoctorCutPercent = computeDoctorCutPercent(paidVisitCount);
-                    isAutoComputed = true;
-                }
-            } else if (doctor_cut_override && doctor_cut_percent !== undefined) {
-                newDoctorCutPercent = doctor_cut_percent;
+                newDoctorCutPercent = resolved.doctor_cut_percent;
+            } else if (effectiveMode === 'NOT_INVOLVED') {
+                newDoctorCutPercent = null;
             }
 
             // Update the appointment
             db.run(
                 `UPDATE appointments 
-                 SET session_type = ?, payment_status = ?, free_return_reason = ?, doctor_cut_percent = ?, doctor_involved = ?
+                 SET session_type = ?, payment_status = ?, free_return_reason = ?, doctor_cut_percent = ?, doctor_involved = ?, doctor_involvement_mode = ?
                  WHERE id = ?`,
-                [newSessionType, newPaymentStatus, newFreeReturnReason, newDoctorCutPercent, newDoctorInvolved ? 1 : 0, id],
+                [newSessionType, newPaymentStatus, newFreeReturnReason, newDoctorCutPercent, newDoctorInvolved ? 1 : 0, effectiveMode, id],
                 async function (err) {
                     if (err) return res.status(500).json({ error: err.message });
-
-                    // Check if payment_status changed to PAID
-                    const changedToPaid = payment_status === 'PAID' && appointment.payment_status !== 'PAID';
 
                     const responseData = {
                         message: 'Payment status updated successfully',
@@ -899,7 +899,8 @@ router.patch('/:id/payment', requireAuth, async (req, res) => {
                             payment_status: newPaymentStatus,
                             free_return_reason: newFreeReturnReason,
                             doctor_cut_percent: newDoctorCutPercent,
-                            doctor_involved: newDoctorInvolved
+                            doctor_involved: newDoctorInvolved,
+                            doctor_involvement_mode: effectiveMode
                         }
                     };
 
