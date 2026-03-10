@@ -8,6 +8,9 @@ export default function FinancialEvents() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showAddExpense, setShowAddExpense] = useState(false);
+    const [expenseLoading, setExpenseLoading] = useState(false);
+    const [expenseError, setExpenseError] = useState('');
+    const [expenseSuccess, setExpenseSuccess] = useState('');
     const [newExpense, setNewExpense] = useState({
         event_date: new Date().toISOString().split('T')[0],
         category: 'HOSPITALITY',
@@ -35,6 +38,9 @@ export default function FinancialEvents() {
 
     const handleAddExpense = async (e) => {
         e.preventDefault();
+        setExpenseLoading(true);
+        setExpenseError('');
+        setExpenseSuccess('');
         try {
             await axios.post(`${API_BASE_URL}/financial-events`, {
                 event_date: newExpense.event_date,
@@ -45,7 +51,7 @@ export default function FinancialEvents() {
                 reference_type: 'EXPENSE'
             }, { withCredentials: true });
 
-            setShowAddExpense(false);
+            setExpenseSuccess('✅ Expense added successfully!');
             setNewExpense({
                 event_date: new Date().toISOString().split('T')[0],
                 category: 'HOSPITALITY',
@@ -53,9 +59,16 @@ export default function FinancialEvents() {
                 description: ''
             });
             fetchEvents();
+            setTimeout(() => {
+                setShowAddExpense(false);
+                setExpenseSuccess('');
+            }, 1500);
         } catch (error) {
             console.error('Error adding expense:', error);
-            alert('Failed to add expense');
+            const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to add expense';
+            setExpenseError(msg);
+        } finally {
+            setExpenseLoading(false);
         }
     };
 
@@ -179,9 +192,19 @@ export default function FinancialEvents() {
 
             {/* Add Expense Modal */}
             {showAddExpense && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => !expenseLoading && setShowAddExpense(false)}>
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <h2 className="text-xl font-bold mb-4">Add Expense</h2>
+                        {expenseError && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+                                ❌ {expenseError}
+                            </div>
+                        )}
+                        {expenseSuccess && (
+                            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 text-sm">
+                                {expenseSuccess}
+                            </div>
+                        )}
                         <form onSubmit={handleAddExpense}>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium mb-1">Date</label>
@@ -220,7 +243,7 @@ export default function FinancialEvents() {
                                     onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
                                     className="w-full border rounded px-3 py-2"
                                     required
-                                    min="0"
+                                    min="1"
                                     step="1"
                                 />
                             </div>
@@ -237,12 +260,14 @@ export default function FinancialEvents() {
                             <div className="flex gap-2">
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                                    disabled={expenseLoading}
+                                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
                                 >
-                                    Add Expense
+                                    {expenseLoading ? '⟳ Adding...' : 'Add Expense'}
                                 </button>
                                 <button
                                     type="button"
+                                    disabled={expenseLoading}
                                     onClick={() => setShowAddExpense(false)}
                                     className="flex-1 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
                                 >

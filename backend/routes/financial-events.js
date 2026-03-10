@@ -311,17 +311,23 @@ router.get('/:id', requireAuth, (req, res) => {
 router.post('/', requireAuth, (req, res) => {
     const { event_date, event_type, category, amount, description, reference_type, reference_id } = req.body;
 
+    // Debug logging for production issues
+    console.log('[Financial Events POST] Body:', JSON.stringify(req.body));
+    console.log('[Financial Events POST] Auth:', req.session?.role || 'no-role', 'Session:', !!req.session?.roleId);
+
     // Validation
-    if (!event_date || !event_type || !category || !amount) {
+    if (!event_date || !event_type || !category || amount === undefined || amount === null || amount === '') {
+        console.log('[Financial Events POST] Validation failed:', { event_date, event_type, category, amount });
         return res.status(400).json({ message: 'event_date, event_type, category, and amount are required' });
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ message: 'amount must be a positive number' });
     }
 
     if (!['INCOME', 'EXPENSE'].includes(event_type)) {
         return res.status(400).json({ message: 'event_type must be INCOME or EXPENSE' });
-    }
-
-    if (amount <= 0) {
-        return res.status(400).json({ message: 'amount must be a positive number' });
     }
 
     if (reference_type && !['PATIENT', 'APPOINTMENT', 'EXPENSE', 'SYSTEM'].includes(reference_type)) {
@@ -332,18 +338,25 @@ router.post('/', requireAuth, (req, res) => {
                 (event_date, event_type, category, amount, description, reference_type, reference_id) 
                  VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-    db.run(sql, [event_date, event_type, category, amount, description, reference_type, reference_id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+    db.run(sql, [event_date, event_type, category, parsedAmount, description, reference_type, reference_id], function (err) {
+        if (err) {
+            console.error('[Financial Events POST] DB Error:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
 
         // Return the created event
         db.get('SELECT * FROM financial_events WHERE id = ?', [this.lastID], (err, row) => {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) {
+                console.error('[Financial Events POST] Fetch Error:', err.message);
+                return res.status(500).json({ error: err.message });
+            }
             logAudit(req, {
                 action: 'CREATE',
                 entityType: 'FINANCIAL_EVENT',
                 entityId: row.id,
-                details: { event_type, category, amount, description }
+                details: { event_type, category, amount: parsedAmount, description }
             });
+            console.log('[Financial Events POST] Success: ID', row.id);
             res.status(201).json({ message: 'Financial event created', financial_event: row });
         });
     });
