@@ -117,23 +117,25 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        await fetch(`${API_BASE_URL}/auth/logout`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: getAuthHeaders()
-        });
+        try {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
+        } catch (err) {
+            console.error('Logout request failed:', err);
+        }
 
-        // Clear tokens (keep device token for remember device functionality)
+        // Clear ALL tokens including device token to prevent auto-login
         localStorage.removeItem(EMPLOYEE_TOKEN_KEY);
-        // Note: We don't clear DEVICE_TOKEN_KEY so user can auto-login next time
+        localStorage.removeItem(DEVICE_TOKEN_KEY);
 
         setUser(null);
     };
 
     const fullLogout = async () => {
         await logout();
-        // Also clear device token for full logout
-        localStorage.removeItem(DEVICE_TOKEN_KEY);
     };
 
     return (
