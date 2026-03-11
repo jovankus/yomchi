@@ -71,7 +71,7 @@ function AppRoutes() {
 
             {/* Clinic login is always accessible */}
             <Route path="/clinic-login" element={
-                clinic ? <Navigate to="/dashboard" replace /> : <ClinicLogin />
+                clinic ? <Navigate to="/appointments" replace /> : <ClinicLogin />
             } />
 
             {/* Not authorized page */}
